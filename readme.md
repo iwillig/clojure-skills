@@ -7,6 +7,11 @@ This project consist of a collection of skills and prompts that you
 can mix and compose to create an effective coding agent for your code
 base.
 
+## Installation
+
+```shell
+brew bundle
+```
 
 ## Skills
 
