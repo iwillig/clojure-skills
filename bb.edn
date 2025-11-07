@@ -40,7 +40,7 @@
            (time
             (clojure "-M:lint -m clj-kondo.main --lint dev src test")))}
 
-  main {:doc "Run the main command line inteface"
+  main {:doc "Run the main command line interface"
         :task (do
                 (apply clojure (into ["-M:jvm-base:main"] *command-line-args*)))}
 
@@ -69,9 +69,26 @@
    (do
      (clojure "-M:dev:format -m cljstyle.main check scripts src dev"))}
 
+  typos
+  {:doc "Check for typos in the codebase"
+   :task (do
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold "Checking for typos..."]))
+           (shell "typos"))}
+
+  typos-fix
+  {:doc "Automatically fix typos in the codebase"
+   :task (do
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold "Fixing typos..."]))
+           (shell "typos --write-changes"))}
+
   ci
   {:doc "Runs linting and tests for the CI"
    :task (do (run 'clean)
              (run 'fmt-check)
              (run 'lint)
+             (run 'typos)
              (run 'test))}}}

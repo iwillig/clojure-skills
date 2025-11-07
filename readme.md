@@ -34,3 +34,30 @@ These skills are broken into different sub sections
 
 Skills can be combined into prompts that OpenCode is able to
 use. See prompts/clojure_build.md for an example.
+
+## Development
+
+### Spell Checking
+
+This project uses [typos](https://github.com/crate-ci/typos) for spell checking source code.
+
+**Check for typos:**
+```shell
+make typos
+# or
+bb typos
+```
+
+**Automatically fix typos:**
+```shell
+make typos-fix
+# or
+bb typos-fix
+```
+
+**Configuration:**
+
+The `_typos.toml` file contains project-specific configuration for
+handling false positives and excluding directories. See the [typos
+documentation](https://github.com/crate-ci/typos/blob/master/docs/reference.md)
+for more details.

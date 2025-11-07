@@ -1,0 +1,18 @@
+# Typos configuration for clojure-skills project
+# See: https://github.com/crate-ci/typos
+
+[default.extend-words]
+# EDN is a valid Clojure file format (Extensible Data Notation)
+edn = "edn"
+
+[files]
+# Respect gitignore by default
+ignore-vcs = false
+
+# Don't check generated or cache directories
+extend-exclude = [
+  "_build/",
+  ".cpcache/",
+  ".clj-kondo/.cache/",
+  ".lsp/",
+]
