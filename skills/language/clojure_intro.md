@@ -5,88 +5,69 @@ description: An introduction to the Clojure Language.
 
 # Clojure Introduction
 
-Clojure is a functional dynamic Lisp for the JVM. It's designed as a
-pragmatic language that brings modern functional programming concepts
-to one of the industry's most stable and widely-used platforms.
+Clojure is a functional Lisp for the JVM combining immutable data structures, first-class functions, and practical concurrency support.
 
-## What is Clojure?
+## Core Language Features
 
-Clojure combines four core ideas:
+**Data Structures** (all immutable by default):
+- `{}` - Maps (key-value pairs)
+- `[]` - Vectors (indexed sequences)
+- `#{}` - Sets (unique values)
+- `'()` - Lists (linked lists)
 
-- **A Lisp** - A programming language with code-as-data and syntactic abstraction
-- **Functional Programming** - Immutable data structures and first-class functions
-- **JVM Hosted** - Symbiotic with an established platform (the Java Virtual Machine)
-- **Concurrent Programming** - Built-in support for safe, concurrent state management
+**Functions**: Defined with `defn`. Functions are first-class and
+support variadic arguments, destructuring, and composition.
 
-## Lisp Heritage
+**No OOP**: Use functions and data structures instead of
+classes. Polymorphism via `multimethods` and `protocols`, not
+inheritance.
 
-Lisp is one of programming's oldest and most powerful
-paradigms. Clojure modernizes Lisp by:
+## How Immutability Works
 
-- **Immutability by Default** - All core data structures are immutable
-  and persistent, making code easier to reason about
-- **Extensible Data Structures** - Maps and vectors are first-class
-  citizens with the same syntactic treatment as lists
-- **Code-as-Data** - Programs are data structures, enabling powerful
-  metaprogramming and syntactic abstraction
+All data structures are immutable—operations return new copies rather
+than modifying existing data. This enables:
 
-## Functional Programming Foundation
+- Safe concurrent access without locks
+- Easier testing and reasoning about code
+- Efficient structural sharing (new versions don't copy everything)
 
-Clojure embraces functional programming principles:
+**Pattern**: Use `assoc`, `conj`, `update`, etc. to create modified
+versions of data.
 
-- **Immutable Data** - Once created, data structures don't change,
-  eliminating entire classes of bugs
-- **Pure Functions** - Functions without side effects that always
-  return the same output for the same input
-- **First-Class Functions** - Functions can be passed as arguments,
-  returned from functions, and stored in data structures
-- **Lazy Evaluation** - Sequences are computed on-demand, enabling
-  infinite sequences and memory efficiency
-- **Persistent Data Structures** - Efficiently create new versions of
-  data structures without copying everything
+```clojure
+(def person {:name "Alice" :age 30})
+(assoc person :age 31)  ; Returns new map, original unchanged
+```
 
-## The JVM Platform
+## State Management
 
-Rather than building its own runtime, Clojure leverages the JVM:
+When mutation is needed:
+- **`atom`** - Simple, synchronous updates: `(swap! my-atom update-fn)`
+- **`ref`** - Coordinated updates in transactions: `(dosync (alter my-ref update-fn))`
+- **`agent`** - Asynchronous updates: `(send my-agent update-fn)`
 
-- **Performance** - JIT compilation and decades of optimization
-- **Libraries** - Access to millions of Java libraries and the entire ecosystem
-- **Stability** - Proven infrastructure trusted by enterprises worldwide
-- **Interoperability** - Call Java code directly, consume existing libraries seamlessly
-- **Resource Management** - Garbage collection and resource management handled by the platform
+## Key Functions
 
-## Polymorphism Without Objects
+Most operations work on sequences. Common patterns:
+- `map`, `filter`, `reduce` - Transform sequences
+- `into`, `conj` - Build collections
+- `get`, `assoc`, `dissoc` - Access/modify maps
+- `->`, `->>` - Threading macros for readable pipelines
 
-Clojure challenges the assumption that object-oriented programming is necessary:
+## Code as Data
 
-- **Multimethods** - Decouple polymorphism from types, enabling
-  multiple taxonomies
-- **Protocols** - Define extensible interfaces for types to implement
-- **Functions on Data** - Follow the principle: "100 functions on one
-  data structure > 10 functions on 10 data structures"
-- **No Inheritance** - Avoid the complexity of class hierarchies while
-  still supporting polymorphism
+Clojure programs are data structures. This enables:
+- **Macros** - Write code that writes code
+- **Easy metaprogramming** - Inspect and transform code at runtime
+- **REPL-driven development** - Test functions interactively
 
-## Concurrency Without Locks
+## Java Interop
 
-The multi-core future demands better concurrency tools:
+Call Java directly: `(ClassName/staticMethod)` or `(.method object)`. Access Java libraries seamlessly.
 
-- **Immutability** - Share data freely between threads without synchronization
-- **Software Transactional Memory (STM)** - Coordinate safe, atomic updates to shared state
-- **Atoms** - Simple, efficient updates to a single piece of state
-- **Agents** - Asynchronous, independent state management
-- **Refs** - Transactional references for coordinated updates
+## Why Clojure
 
-Traditional locking is difficult to get right. Clojure's concurrency
-primitives make it dramatically easier to write correct, concurrent
-code.
-
-## A Pragmatic Language
-
-Clojure is designed for real-world use:
-
-- **Dynamic Typing** - Rapid development without verbose type declarations
-- **REPL-Driven Development** - Interactive development with immediate feedback
-- **Expressive Syntax** - More concise and readable than Java while staying practical
-- **Java Interop** - "Write Java in Java, consume and extend Java from Clojure"
-- **Performance** - Competitive with Java while offering higher-level abstractions
+- **Pragmatic** - Runs on stable JVM infrastructure
+- **Concurrency-first** - Immutability + agents/STM handle multi-core safely
+- **Expressive** - Less boilerplate than Java, more powerful abstractions
+- **Dynamic** - REPL feedback, no compile-test-deploy cycle needed
