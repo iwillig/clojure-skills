@@ -1,14 +1,89 @@
 {:deps {medley/medley
         {:mvn/version "1.3.0"}
         io.github.paintparty/bling
-        {:mvn/version "0.6.0"}}
+        {:mvn/version "0.6.0"}
+        clj-commons/clj-yaml
+        {:mvn/version "1.0.29"}}
 
  :paths ["src" "test"]
 
  :tasks
  {:requires ([babashka.fs :as fs]
              [bling.core :as bling]
-             [babashka.process :as p])
+             [babashka.process :as p]
+             [clj-yaml.core :as yaml]
+             [clojure.string :as str])
+
+  ;; Build a specific prompt file by name
+  build
+  {:doc "Build a specific prompt file by name (without .md extension)\nUsage: bb build clojure_skill_builder"
+   :task (let [name (or (first *command-line-args*)
+                        (throw (ex-info "Usage: bb build <name>" {})))
+               prompt (str "prompts/" name ".md")
+               metadata (str "prompt_templates/" name ".yaml")
+               output (str "_build/" name ".md")
+               template "prompt_templates/combine.md"]
+
+           (when-not (fs/exists? prompt)
+             (throw (ex-info (str "Error: Prompt file not found: " prompt) {})))
+
+           (when-not (fs/exists? metadata)
+             (throw (ex-info (str "Error: Metadata file not found: " metadata) {})))
+
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold (str "Building " output "...")]))
+
+           (fs/create-dirs "_build")
+
+           ;; Read skills from metadata YAML
+           (let [meta-content (yaml/parse-string (slurp metadata))
+                 skills (get meta-content :skills [])
+                 skill-files (str/join " " skills)
+                 pandoc-cmd (str "pandoc " prompt " " skill-files
+                                 " --metadata-file=" metadata
+                                 " --template=" template
+                                 " -o " output)]
+
+             (shell pandoc-cmd)
+
+             (bling/callout
+              {:type :success}
+              (bling/bling [:bold (str "Build successful: " output)]))))}
+
+  ;; Build all prompt files
+  build-all
+  {:doc "Build all prompt files"
+   :task (do
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold "Building all prompts..."]))
+
+           ;; Build clojure_skill_builder
+           (shell "bb build clojure_skill_builder")
+
+           ;; Build clojure_build
+           (shell "bb build clojure_build")
+
+           (bling/callout
+            {:type :success}
+            (bling/bling [:bold "All builds complete!"])))}
+
+  ;; Clean build artifacts
+  clean-build
+  {:doc "Clean all build artifacts from _build directory"
+   :task (do
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold "Cleaning _build directory..."]))
+
+           (when (fs/exists? "_build")
+             (doseq [f (fs/list-dir "_build")]
+               (fs/delete f)))
+
+           (bling/callout
+            {:type :success}
+            (bling/bling [:bold "Clean complete"])))}
 
   clean
   {:doc "Cleans the temp build files"

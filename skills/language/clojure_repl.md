@@ -3,8 +3,9 @@ name: clojure_repl
 description: |
   Guide for interactive REPL-driven development in Clojure. Use when working
   interactively, testing code, exploring libraries, looking up documentation,
-  debugging exceptions, or developing iteratively. Essential for the Clojure
-  development workflow.
+  debugging exceptions, or developing iteratively. Covers both clj-mcp.repl-tools
+  (enhanced agent-friendly functions) and standard clojure.repl utilities.
+  Essential for the Clojure development workflow.
 ---
 
 # Clojure REPL
@@ -62,116 +63,202 @@ Libraries must be loaded before you can use them or query their documentation:
 
 ## Common Workflows
 
-### Exploring with clojure.repl
+### Exploring with clj-mcp.repl-tools (Recommended for Agents)
 
-The `clojure.repl` namespace provides essential REPL utilities. Load it first:
+The `clj-mcp.repl-tools` namespace provides enhanced REPL utilities optimized
+for programmatic access and agent workflows. These functions return structured
+data instead of printing, making them more suitable for automated code exploration.
 
+#### Getting Started
+
+```clojure
+;; See all available functions
+(clj-mcp.repl-tools/help)
+
+;; Or use an alias for convenience
+(require '[clj-mcp.repl-tools :as rt])
+```
+
+#### list-ns - List All Namespaces
+Discover what namespaces are loaded:
+
+```clojure
+(clj-mcp.repl-tools/list-ns)
+; Returns a seq of all loaded namespace symbols
+; => (clojure.core clojure.string clojure.set ...)
+```
+
+**Use when**: You need to see what's available in the current environment.
+
+#### list-vars - List Functions in a Namespace
+Explore the contents of a namespace:
+
+```clojure
+(clj-mcp.repl-tools/list-vars 'clojure.string)
+; Returns formatted documentation for all public vars:
+;
+; Vars in clojure.string:
+; -------------------------------------------
+; blank?
+;   ([s])
+;   True if s is nil, empty, or contains only whitespace.
+;
+; capitalize
+;   ([s])
+;   Converts first character of the string to upper-case...
+; ...
+```
+
+**Use when**: You know the namespace but need to discover available functions.
+
+#### doc-symbol - View Function Documentation
+Get documentation for a specific symbol:
+
+```clojure
+(clj-mcp.repl-tools/doc-symbol 'map)
+; -------------------------
+; map - Returns a lazy sequence consisting of the result of applying f to...
+;   Defined in: clojure.core
+;   Arguments: ([f] [f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls])
+;   Added in: 1.0
+; -------------------------
+
+(clj-mcp.repl-tools/doc-symbol 'clojure.string/upper-case)
+; -------------------------
+; upper-case - Converts string to all upper-case.
+;   Defined in: clojure.string
+;   Arguments: ([s])
+;   Added in: 1.2
+; -------------------------
+```
+
+**Use when**: You need to understand how to use a specific function.
+
+#### doc-namespace - Document an Entire Namespace
+View namespace-level documentation:
+
+```clojure
+(clj-mcp.repl-tools/doc-namespace 'clojure.string)
+; Shows namespace docstring and overview
+```
+
+**Use when**: You need to understand the purpose and scope of a namespace.
+
+#### source-symbol - View Source Code
+See the actual implementation:
+
+```clojure
+(clj-mcp.repl-tools/source-symbol 'some?)
+; Returns the source code as a string
+```
+
+**Use when**: You need to understand how something is implemented or learn
+from existing code patterns.
+
+#### find-symbols - Search for Symbols
+Find symbols by name pattern:
+
+```clojure
+;; Search by substring
+(clj-mcp.repl-tools/find-symbols "map")
+; Symbols matching 'map':
+;   clojure.core/map
+;   clojure.core/map-indexed
+;   clojure.core/mapv
+;   clojure.core/mapcat
+;   clojure.set/map-invert
+;   ...
+
+;; Search by regex
+(clj-mcp.repl-tools/find-symbols #".*index.*")
+; Returns all symbols containing "index"
+```
+
+**Use when**: You remember part of a function name or want to find related functions.
+
+#### complete - Autocomplete Symbol Names
+Get completions for a prefix:
+
+```clojure
+(clj-mcp.repl-tools/complete "clojure.string/u")
+; Completions for 'clojure.string/u':
+;   clojure.string/upper-case
+```
+
+**Use when**: You know the beginning of a function name and want to see matches.
+
+#### describe-spec - Explore Clojure Specs
+View detailed spec information:
+
+```clojure
+(clj-mcp.repl-tools/describe-spec :my/spec)
+; Shows spec details, form, and examples
+```
+
+**Use when**: Working with clojure.spec and need to understand spec definitions.
+
+### Exploring with clojure.repl (Standard Library)
+
+The `clojure.repl` namespace provides standard REPL utilities. These print
+directly to stdout, which is suitable for interactive use but less convenient
+for programmatic access.
+
+**Load it first**:
 ```clojure
 (require '[clojure.repl :refer :all])
 ```
 
-### Looking Up Documentation
-
 #### doc - View Function Documentation
-View the docstring for any var:
-
 ```clojure
 (doc map)
 ; -------------------------
 ; clojure.core/map
 ; ([f] [f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls])
 ;   Returns a lazy sequence consisting of the result of applying f to...
-
-(doc clojure.string/upper-case)
-; -------------------------
-; clojure.string/upper-case
-; ([s])
-;   Converts string to all upper-case.
 ```
 
-**Important**: Documentation is only available for required namespaces.
+**Note**: Prints to stdout. Use `clj-mcp.repl-tools/doc-symbol` for programmatic access.
 
 #### source - View Source Code
-See the implementation of any function:
-
 ```clojure
 (source some?)
 ; (defn some?
 ;   "Returns true if x is not nil, false otherwise."
-;   {:tag Boolean
-;    :added "1.6"
-;    :static true}
+;   {:tag Boolean :added "1.6" :static true}
 ;   [x] (not (nil? x)))
 ```
 
-Requires that the `.clj` source file is on the classpath.
+Requires `.clj` source files on classpath.
 
 #### dir - List Namespace Contents
-List all public vars in a namespace:
-
 ```clojure
 (dir clojure.string)
 ; blank?
 ; capitalize
 ; ends-with?
-; escape
-; includes?
-; index-of
-; join
-; ...
-
-(dir clojure.repl)
-; apropos
-; demunge
-; dir
-; doc
-; find-doc
-; pst
-; source
 ; ...
 ```
 
 #### apropos - Search by Name
-Find vars whose names match a pattern:
-
 ```clojure
 (apropos "index")
 ; (clojure.core/indexed?
 ;  clojure.core/keep-indexed
-;  clojure.core/map-indexed
 ;  clojure.string/index-of
-;  clojure.string/last-index-of)
-
-(apropos "map")
-; Returns all vars with "map" in the name
+;  ...)
 ```
 
 #### find-doc - Search Documentation
-Search docstrings across all loaded namespaces:
-
 ```clojure
 (find-doc "indexed")
-; -------------------------
-; clojure.core/contains?
-; ([coll key])
-;  Returns true if key is present in the given collection, otherwise
-;  returns false. Note that for numerically indexed collections like
-;  vectors and Java arrays, this tests if the numeric key is within the
-;  range of indexes...
-; -------------------------
-; clojure.core/indexed?
-; ([coll])
-;  Return true if coll implements Indexed, indicating efficient lookup by index
-; ...
+; Searches docstrings across all loaded namespaces
 ```
-
-Searches both function names and their documentation strings.
 
 ### Debugging Exceptions
 
-#### pst - Print Stack Trace
-When an exception occurs, use `pst` to see the stack trace:
+#### Using clojure.repl for Stack Traces
 
+**pst - Print Stack Trace**:
 ```clojure
 user=> (/ 1 0)
 ; ArithmeticException: Divide by zero
@@ -194,17 +281,13 @@ user=> (pst)
 - `*2` - Result of second-to-last expression
 - `*3` - Result of third-to-last expression
 
-#### root-cause - Find Original Exception
-Unwrap nested exceptions to find the root cause:
-
+**root-cause - Find Original Exception**:
 ```clojure
 (root-cause *e)
 ; Returns the initial cause by peeling off exception wrappers
 ```
 
-#### demunge - Readable Stack Traces
-Convert mangled Clojure function names in stack traces to readable form:
-
+**demunge - Readable Stack Traces**:
 ```clojure
 (demunge "clojure.core$map")
 ; => "clojure.core/map"
@@ -216,7 +299,7 @@ Useful when reading raw stack traces from Java exceptions.
 
 1. **Start small**: Test individual expressions
 2. **Build incrementally**: Define functions and test them immediately
-3. **Explore unknown territory**: Use `doc`, `source`, `dir` to understand libraries
+3. **Explore unknown territory**: Use `clj-mcp.repl-tools` or `clojure.repl` to understand libraries
 4. **Debug as you go**: Test each piece before moving forward
 5. **Iterate rapidly**: Change code and re-evaluate
 
@@ -269,45 +352,50 @@ may not work in all environments.
 
 ## When to Use Each Tool
 
-**Use `doc`** when you:
-- Know the function name but need usage details
-- Want to see function signatures
-- Need quick reference for arguments
+### clj-mcp.repl-tools vs clojure.repl
 
-**Use `source`** when you:
-- Want to understand how something is implemented
-- Need to learn patterns from core library code
-- Are debugging unexpected behavior
+**Use clj-mcp.repl-tools when**:
+- Building automated workflows or agent-driven code exploration
+- You need structured data instead of printed output
+- Working programmatically with REPL information
+- You want consistent, parseable output formats
+- You need enhanced features like `list-ns`, `complete`, `describe-spec`
 
-**Use `dir`** when you:
-- Know the namespace but not the specific function
-- Want to explore what's available in a library
-- Need to browse available functions
+**Use clojure.repl when**:
+- Working interactively at a human REPL
+- You prefer traditional Clojure REPL tools
+- Output directly to console is desired
+- Working in environments without clj-mcp.repl-tools
 
-**Use `apropos`** when you:
-- Remember part of a function name
-- Are searching across all namespaces
-- Don't know which namespace contains the function
+### Function Comparison
 
-**Use `find-doc`** when you:
-- Don't remember the function name
-- Are searching by concept or keyword
-- Need to find functions related to a topic
+| Task | clj-mcp.repl-tools | clojure.repl |
+|------|-------------------|--------------|
+| List namespaces | `list-ns` | N/A |
+| List vars | `list-vars` | `dir` |
+| Show documentation | `doc-symbol` | `doc` |
+| Show source | `source-symbol` | `source` |
+| Search symbols | `find-symbols` | `apropos` |
+| Search docs | `find-symbols` | `find-doc` |
+| Autocomplete | `complete` | N/A |
+| Namespace docs | `doc-namespace` | N/A |
+| Spec info | `describe-spec` | N/A |
 
-**Use `pst`** when you:
-- Get an exception and need to see the stack trace
-- Want to understand where an error originated
-- Need to debug a failure
+**For agents**: Prefer `clj-mcp.repl-tools` as it's designed for programmatic use.
+
+**For humans**: Either works, but `clojure.repl` is the standard approach.
 
 ## Best Practices
 
 **Do**:
+- **Use `clj-mcp.repl-tools` for agent workflows** - Returns structured data
 - Test expressions incrementally before combining them
-- Use `doc` and `source` liberally to learn from existing code
+- Use `doc-symbol` or `doc` liberally to learn from existing code
 - Keep the REPL open during development for rapid feedback
-- Load `clojure.repl` tools at the start: `(require '[clojure.repl :refer :all])`
 - Use `:reload` flag when re-requiring changed namespaces: `(require 'my.ns :reload)`
 - Experiment freely - the REPL is a safe sandbox
+- Start with `list-ns` to discover available namespaces
+- Use `list-vars` to explore namespace contents
 
 **Don't**:
 - Paste large blocks of code without testing pieces first
@@ -330,7 +418,7 @@ user=> (str/upper-case "hello")
 (str/upper-case "hello")  ; => "HELLO"
 ```
 
-### "No documentation found"
+### "No documentation found" with clojure.repl/doc
 ```clojure
 (doc clojure.set/union)
 ; nil  ; No doc found
@@ -340,6 +428,12 @@ user=> (str/upper-case "hello")
 ```clojure
 (require '[clojure.set])
 (doc clojure.set/union)  ; Now works
+```
+
+**Or use clj-mcp.repl-tools** which can find symbols across namespaces:
+```clojure
+(clj-mcp.repl-tools/doc-symbol 'clojure.set/union)
+; Works even if namespace not required
 ```
 
 ### "Can't find source"
@@ -374,18 +468,58 @@ When you edit a source file and reload it:
 
 ## Development Workflow Tips
 
-1. **Keep a scratch namespace**: Use `user` namespace for experiments
-2. **Save useful snippets**: Copy successful REPL experiments to your editor
-3. **Use editor integration**: Most Clojure editors can send code to REPL
-4. **Check return values**: Always verify what functions return, not just side effects
-5. **Explore before implementing**: Use `doc`, `source`, `dir` to understand libraries
-6. **Test edge cases**: Try `nil`, empty collections, invalid inputs at REPL
-7. **Use REPL-driven testing**: Develop tests alongside code in REPL
+1. **Start with exploration**: Use `list-ns` and `list-vars` to discover what's available
+2. **Keep a scratch namespace**: Use `user` namespace for experiments
+3. **Save useful snippets**: Copy successful REPL experiments to your editor
+4. **Use editor integration**: Most Clojure editors can send code to REPL
+5. **Check return values**: Always verify what functions return, not just side effects
+6. **Explore before implementing**: Use `doc-symbol`, `source-symbol` to understand libraries
+7. **Test edge cases**: Try `nil`, empty collections, invalid inputs at REPL
+8. **Use REPL-driven testing**: Develop tests alongside code in REPL
+9. **Leverage autocomplete**: Use `complete` to discover function names
+10. **Search intelligently**: Use `find-symbols` with patterns to locate related functions
+
+## Example: Exploring an Unknown Namespace
+
+```clojure
+;; 1. Discover available namespaces
+(clj-mcp.repl-tools/list-ns)
+; See clojure.string in the list
+
+;; 2. Explore the namespace
+(clj-mcp.repl-tools/list-vars 'clojure.string)
+; See all available functions with documentation
+
+;; 3. Find relevant functions
+(clj-mcp.repl-tools/find-symbols "upper")
+; => clojure.string/upper-case
+
+;; 4. Get detailed documentation
+(clj-mcp.repl-tools/doc-symbol 'clojure.string/upper-case)
+; See parameters and usage
+
+;; 5. View implementation if needed
+(clj-mcp.repl-tools/source-symbol 'clojure.string/upper-case)
+
+;; 6. Test it
+(require '[clojure.string :as str])
+(str/upper-case "hello")
+; => "HELLO"
+```
 
 ## Summary
 
 The Clojure REPL is your primary development tool:
 
+### For Agent Workflows (Recommended):
+- **Explore namespaces**: `(clj-mcp.repl-tools/list-ns)`
+- **List functions**: `(clj-mcp.repl-tools/list-vars 'namespace)`
+- **Get documentation**: `(clj-mcp.repl-tools/doc-symbol 'function)`
+- **Search symbols**: `(clj-mcp.repl-tools/find-symbols "pattern")`
+- **Autocomplete**: `(clj-mcp.repl-tools/complete "prefix")`
+- **View source**: `(clj-mcp.repl-tools/source-symbol 'function)`
+
+### For Interactive Development:
 - **Evaluate immediately**: Get instant feedback on every expression
 - **Explore actively**: Use `doc`, `source`, `dir`, `apropos`, `find-doc`
 - **Debug interactively**: Use `pst`, `root-cause`, and special vars like `*e`

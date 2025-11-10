@@ -2,6 +2,40 @@ title: Clojure Agent
 author: Ivan Willig
 date: 2025-11-06
 skills:
+  # Language fundamentals
   - skills/language/clojure_intro.md
   - skills/language/clojure_repl.md
   - skills/clojure_mcp/clojure_eval.md
+  
+  # Data validation
+  - skills/libraries/data_validation/malli.md
+  
+  # Database
+  - skills/libraries/database/next_jdbc.md
+  - skills/libraries/database/honeysql.md
+  - skills/libraries/database/ragtime.md
+  - skills/libraries/database/sqlite_jdbc.md
+  
+  # Data formats
+  - skills/libraries/data_formats/clj_yaml.md
+  
+  # Data structures
+  - skills/libraries/data_structures/editscript.md
+  
+  # Functional programming
+  - skills/libraries/functional/lentes.md
+  
+  # Logging
+  - skills/libraries/logging/cambium_core.md
+  - skills/libraries/logging/cambium_codec_cheshire.md
+  - skills/libraries/logging/cambium_logback_json.md
+  
+  # Testing
+  - skills/testing/kaocha.md
+  - skills/testing/matcher_combinators.md
+  - skills/testing/scope_capture.md
+  - skills/testing/test_check.md
+  - skills/testing/test_chuck.md
+  
+  # Tooling
+  - skills/tooling/clojure_lsp_api.md
