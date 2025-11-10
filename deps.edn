@@ -21,6 +21,10 @@
   metosin/reitit {:mvn/version "0.9.2"}
   liberator/liberator {:mvn/version "0.15.3"}
 
+  clj-antlr/clj-antlr {:mvn/version "0.2.13"}
+  datalevin/datalevin {:mvn/version "0.9.22"}
+  datascript/datascript {:mvn/version "1.7.8"}
+
   ;; Structured logging with Cambium
   ;; Note: Logback includes slf4j-api 1.7.x, which is compatible
   cambium/cambium.core {:mvn/version "1.1.1"}
