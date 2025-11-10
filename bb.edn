@@ -236,4 +236,120 @@
            (println)
            (println "skills:")
            (doseq [skill (sort-by :path skills)]
-             (println (str "  - " (:path skill)))))}}}
+             (println (str "  - " (:path skill)))))}
+
+  ;; LLMLingua compression tasks
+
+  setup-python
+  {:doc "Install Python dependencies using pipenv"
+   :task (do
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold "Installing Python dependencies with pipenv..."]))
+
+           (shell "pipenv install")
+
+           (bling/callout
+            {:type :success}
+            (bling/bling [:bold "Python environment ready!"]))
+
+           (println)
+           (println "You can now use:")
+           (println "  bb compress <name> --ratio 10")
+           (println "  bb build-compressed <name> --ratio 10")
+           (println "  bb compress-skill skills/path/to/file.md --ratio 10"))}
+
+  compress
+  {:doc "Compress a built prompt file using LLMLingua\nUsage: bb compress clojure_skill_builder --ratio 10"
+   :task (let [args *command-line-args*
+               name (first args)
+               ratio-idx (first (keep-indexed (fn [idx arg] (when (= "--ratio" arg) idx)) args))
+               ratio-arg (when ratio-idx (nth args (inc ratio-idx) nil))
+               ratio (if ratio-arg (parse-double ratio-arg) 10.0)
+
+               input (str "_build/" name ".md")
+               output (str "_build/" name ".compressed.md")]
+
+           (when-not name
+             (throw (ex-info "Usage: bb compress <name> [--ratio N]" {})))
+
+           (when-not (fs/exists? input)
+             (throw (ex-info (str "Error: Built file not found: " input
+                                  "\nRun 'bb build " name "' first.") {})))
+
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold (str "Compressing " input " with " ratio "x ratio...")]))
+
+           ;; Run Python compression script via pipenv
+           (let [result (shell {:out :string
+                                :err :string
+                                :continue true}
+                               (str "pipenv run python scripts/compress_prompt.py"
+                                    " --input " input
+                                    " --output " output
+                                    " --ratio " ratio))]
+             (if (zero? (:exit result))
+               (do
+                 (println (:out result))
+                 (bling/callout
+                  {:type :success}
+                  (bling/bling [:bold (str "Compression successful: " output)])))
+               (do
+                 (println (:err result))
+                 (throw (ex-info "Compression failed" {:result result}))))))}
+
+  compress-skill
+  {:doc "Compress a single skill file\nUsage: bb compress-skill skills/libraries/data_validation/malli.md --ratio 10"
+   :task (let [args *command-line-args*
+               input-file (first args)
+               ratio-idx (first (keep-indexed (fn [idx arg] (when (= "--ratio" arg) idx)) args))
+               ratio-arg (when ratio-idx (nth args (inc ratio-idx) nil))
+               ratio (if ratio-arg (parse-double ratio-arg) 10.0)
+
+               ;; Create output path by adding .compressed before .md
+               output-file (str/replace input-file (re-pattern "\\.md$") ".compressed.md")]
+
+           (when-not input-file
+             (throw (ex-info "Usage: bb compress-skill <path/to/skill.md> [--ratio N]" {})))
+
+           (when-not (fs/exists? input-file)
+             (throw (ex-info (str "Error: Skill file not found: " input-file) {})))
+
+           (bling/callout
+            {:type :info}
+            (bling/bling [:bold (str "Compressing " input-file " with " ratio "x ratio...")]))
+
+           (let [result (shell {:out :string
+                                :err :string
+                                :continue true}
+                               (str "pipenv run python scripts/compress_prompt.py"
+                                    " --input " input-file
+                                    " --output " output-file
+                                    " --ratio " ratio))]
+             (if (zero? (:exit result))
+               (do
+                 (println (:out result))
+                 (bling/callout
+                  {:type :success}
+                  (bling/bling [:bold (str "Compressed: " output-file)])))
+               (do
+                 (println (:err result))
+                 (throw (ex-info "Compression failed" {:result result}))))))}
+
+  build-compressed
+  {:doc "Build and compress a prompt file\nUsage: bb build-compressed clojure_skill_builder --ratio 10"
+   :task (let [args *command-line-args*
+               name (first args)
+               ratio-idx (first (keep-indexed (fn [idx arg] (when (= "--ratio" arg) idx)) args))
+               ratio-arg (when ratio-idx (nth args (inc ratio-idx) nil))
+               ratio (if ratio-arg ratio-arg "10")]
+
+           (when-not name
+             (throw (ex-info "Usage: bb build-compressed <name> [--ratio N]" {})))
+
+           ;; Build first
+           (shell (str "bb build " name))
+
+           ;; Then compress
+           (shell (str "bb compress " name " --ratio " ratio)))}}}
