@@ -12,11 +12,40 @@ description: |
 
 # Java Foreign Function and Memory API
 
+**Also known as**: FFM API, Panama FFI, Java Panama Project, Foreign Function Interface
+
 ## Quick Start
 
 The Foreign Function and Memory (FFM) API enables Java programs to call native functions and access native memory safely, without JNI's complexity.
 
 **Note**: FFM API requires Java 19+ (preview) or Java 22+ (finalized). Enable with `--enable-preview` flag for preview versions.
+
+## Setup Requirements
+
+**Java Version**: Java 22+ (finalized) or Java 19-21 (preview)
+
+**For preview versions (Java 19-21)**, add to `deps.edn`:
+```clojure
+{:aliases
+ {:ffm {:jvm-opts ["--enable-preview"
+                   "--add-modules=jdk.incubator.foreign"]}}}
+```
+
+**Usage**:
+```bash
+clojure -M:ffm
+```
+
+**Check your setup**:
+```clojure
+(try
+  (import '[java.lang.foreign Arena])
+  (println "FFM API available!")
+  (catch Exception e
+    (println "FFM API not available:" (.getMessage e))))
+```
+
+## Basic Example
 
 ```clojure
 ;; Call C's strlen function from Clojure
@@ -270,14 +299,64 @@ Call strlen from C standard library:
 ;; => 23
 ```
 
+### Workflow 3b: Safe Function Lookup with Error Handling
+
+Handle missing functions gracefully:
+
+```clojure
+(import '[java.lang.foreign Arena Linker SymbolLookup]
+        '[java.lang.foreign FunctionDescriptor ValueLayout])
+
+(defn find-function
+  "Safely lookup a function, throwing informative error if not found"
+  [lib function-name]
+  (let [opt-addr (.find lib function-name)]
+    (if (.isPresent opt-addr)
+      (.get opt-addr)
+      (throw (ex-info "Function not found"
+                      {:function function-name
+                       :library (str lib)})))))
+
+(defn safe-call-strlen [s]
+  (with-open [arena (Arena/ofConfined)]
+    (let [native-str (.allocateUtf8String arena s)
+          linker (Linker/nativeLinker)
+          std-lib (.defaultLookup linker)
+          
+          ;; Safe lookup with error handling
+          strlen-addr (find-function std-lib "strlen")
+          
+          strlen-sig (FunctionDescriptor/of
+                      ValueLayout/JAVA_LONG
+                      ValueLayout/ADDRESS)
+          
+          strlen (.downcallHandle linker strlen-addr strlen-sig)]
+      
+      (.invokeExact strlen native-str))))
+
+;; Try with non-existent function
+(defn try-nonexistent []
+  (with-open [arena (Arena/ofConfined)]
+    (let [linker (Linker/nativeLinker)
+          std-lib (.defaultLookup linker)]
+      (try
+        (find-function std-lib "nonexistent_function")
+        (catch Exception e
+          (println "Error:" (.getMessage e))
+          (println "Data:" (ex-data e)))))))
+
+(try-nonexistent)
+;; Error: Function not found
+;; Data: {:function "nonexistent_function", :library "..."}
+```
+
 ### Workflow 4: Working with C Structures
 
 Define and access structured data:
 
 ```clojure
 (import '[java.lang.foreign Arena MemorySegment MemoryLayout]
-        '[java.lang.foreign StructLayout ValueLayout])
-(import '[java.lang SequenceLayout])
+        '[java.lang.foreign ValueLayout])
 
 ;; C struct:
 ;; struct Point {
@@ -339,33 +418,45 @@ Define and access structured data:
 
 ### Workflow 5: Calling Functions with Multiple Arguments
 
-Call functions with complex signatures:
+Call C's pow function from the math library:
 
 ```clojure
-;; Call C function: int compare(int a, int b, int c)
-;; Returns 1 if a > b and a > c, else 0
+(import '[java.lang.foreign Arena Linker FunctionDescriptor]
+        '[java.lang.foreign SymbolLookup ValueLayout])
 
-(defn load-custom-lib-and-call []
+;; Call C's pow function: double pow(double x, double y)
+(defn call-pow [x y]
   (with-open [arena (Arena/ofConfined)]
     (let [linker (Linker/nativeLinker)
           
-          ;; Load custom library
-          lib (SymbolLookup/libraryLookup "libmylib.so" arena)
-          compare-addr (.get (.find lib "compare"))
+          ;; Load math library (available on most systems)
+          ;; Note: Library name varies by platform
+          lib-name (case (System/getProperty "os.name")
+                     "Linux" "libm.so.6"
+                     "Mac OS X" "libm.dylib"
+                     "Windows" "msvcrt.dll"
+                     "libm.so.6")
           
-          ;; Describe: int compare(int, int, int)
-          compare-sig (FunctionDescriptor/of
-                       ValueLayout/JAVA_INT
-                       ValueLayout/JAVA_INT
-                       ValueLayout/JAVA_INT
-                       ValueLayout/JAVA_INT)
+          lib (SymbolLookup/libraryLookup lib-name arena)
+          pow-addr (.get (.find lib "pow"))
+          
+          ;; Describe: double pow(double, double)
+          pow-sig (FunctionDescriptor/of
+                   ValueLayout/JAVA_DOUBLE
+                   ValueLayout/JAVA_DOUBLE
+                   ValueLayout/JAVA_DOUBLE)
           
           ;; Create handle
-          compare (.downcallHandle linker compare-addr compare-sig)]
+          pow-fn (.downcallHandle linker pow-addr pow-sig)]
       
       ;; Call with arguments
-      (.invokeExact compare 10 5 3))))
-;; => 1 (if 10 > 5 and 10 > 3)
+      (.invokeExact pow-fn x y))))
+
+(call-pow 2.0 8.0)
+;; => 256.0
+
+(call-pow 10.0 3.0)
+;; => 1000.0
 ```
 
 ### Workflow 6: Upcalls (Passing Java Code to C)
@@ -374,36 +465,43 @@ Allow C code to call back into Java:
 
 ```clojure
 (import '[java.lang.foreign Arena Linker FunctionDescriptor]
-        '[java.lang.foreign ValueLayout MemorySegment])
+        '[java.lang.foreign ValueLayout MemorySegment]
+        '[java.lang.invoke MethodHandles MethodType])
 
-;; Java function to pass to C
-(defn my-comparator [a b]
-  (compare a b))
-
-(defn create-upcall-example []
+;; Create an upcall that C can invoke
+(defn create-comparator-upcall []
   (with-open [arena (Arena/ofConfined)]
     (let [linker (Linker/nativeLinker)
           
-          ;; Describe callback: int compare(int, int)
+          ;; Get lookup for method handles
+          lookup (MethodHandles/lookup)
+          
+          ;; Create method type: (int, int) -> int
+          method-type (MethodType/methodType Integer/TYPE 
+                                             (into-array Class [Integer/TYPE Integer/TYPE]))
+          
+          ;; Find method handle for Integer/compare
+          ;; This is a static method: int Integer.compare(int a, int b)
+          compare-handle (.findStatic lookup Integer "compare" method-type)
+          
+          ;; Describe callback signature: int compare(int, int)
           comparator-sig (FunctionDescriptor/of
                           ValueLayout/JAVA_INT
                           ValueLayout/JAVA_INT
                           ValueLayout/JAVA_INT)
           
-          ;; Create method handle for Java function
-          target (reify java.lang.invoke.MethodHandle
-                   ;; Implementation would wrap my-comparator
-                   )
-          
-          ;; Create upcall stub
-          upcall-stub (.upcallStub linker target comparator-sig arena)]
+          ;; Create upcall stub - this is a function pointer C can call
+          upcall-stub (.upcallStub linker compare-handle comparator-sig arena)]
       
-      ;; upcall-stub is a MemorySegment containing function pointer
-      ;; Can be passed to C functions expecting a callback
+      ;; upcall-stub is a MemorySegment containing the function pointer
+      ;; It can be passed to C functions expecting a callback, such as:
+      ;; - qsort(array, count, size, comparator)
+      ;; - bsearch(key, array, count, size, comparator)
+      ;; The stub remains valid while the arena is open
       upcall-stub)))
 
-;; Note: Full upcall example requires MethodHandles.Lookup
-;; See Java documentation for complete implementation
+;; Note: The upcall stub must be kept alive (arena open) while C might call it
+;; For long-lived callbacks, consider using Arena.ofShared() or Arena.global()
 ```
 
 ### Workflow 7: Working with Arrays
@@ -486,6 +584,38 @@ Work with portions of memory segments:
 ;; After modifying slice1:
 ;;   Original at offset 0: 999
 ```
+
+## When to Use FFM API
+
+**Use FFM API when:**
+- Calling C libraries without writing native code
+- Need safe, deterministic memory management
+- Want compile-time validation of native calls (with jextract)
+- Working with modern Java (19+)
+- Need performance close to JNI
+- Want to avoid JNI complexity and unsafe operations
+- Accessing system APIs not available in Java
+- Working with high-performance native libraries
+
+**Use JNI when:**
+- Already have existing JNI code that works
+- Need compatibility with older Java versions (<19)
+- Require maximum performance (though FFM is very close)
+- Have complex native code requiring direct Java/C++ integration
+
+**Use JNA when:**
+- Need simpler API than FFM
+- Don't need maximum performance
+- Want runtime-only library loading without descriptors
+- Need compatibility with Java 8+
+- Rapid prototyping of native calls
+
+**Don't use native interop when:**
+- Pure Java solution exists and performs adequately
+- Performance isn't critical
+- Adds significant complexity without clear benefit
+- Native library is unstable or poorly documented
+- Cross-platform portability is more important than performance
 
 ## Best Practices
 

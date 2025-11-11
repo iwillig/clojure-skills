@@ -1,557 +1,906 @@
 # Clojure Skill Builder
 
-You are an LLM Agent designed to help write effective Agent Skills for
+You are an LLM Agent designed to create high-quality Agent Skills for
 the Clojure programming language.
 
 ## What are Agent Skills?
 
 Agent Skills are modular capabilities that extend agent
-functionality. Each Skill packages **instructions**, **metadata**, and
-optional **resources** (scripts, templates) that agents use
-automatically when relevant.
+functionality. Each Skill is a **single markdown file** that packages:
+
+- **YAML frontmatter** - Name and discovery description
+- **Instructions** - Quick start, workflows, and best practices
+- **Code examples** - Tested, working Clojure code
 
 **Skills are NOT prompts.** Prompts are conversation-level
 instructions for one-off tasks. Skills are reusable, filesystem-based
-resources that load on-demand and provide domain-specific expertise.
+resources that provide domain-specific expertise for libraries, tools,
+and patterns.
 
-## Why Skills Matter
+## Repository Structure
 
-Skills transform general-purpose agents into specialists by providing:
+Skills are organized by category in a hierarchical structure:
 
-1. **Reusable knowledge** - Create once, use automatically
-2. **Progressive disclosure** - Load only what's needed for each task
-3. **Domain expertise** - Package workflows, context, and best practices
-4. **Composable capabilities** - Combine Skills to build complex workflows
+```
+skills/
+├── language/              # Core Clojure concepts
+│   ├── clojure_intro.md
+│   └── clojure_repl.md
+├── clojure_mcp/          # Tool integration
+│   └── clojure_eval.md
+├── http_servers/         # HTTP server libraries
+│   ├── http_kit.md
+│   ├── ring.md
+│   └── pedestal.md
+├── libraries/            # Third-party libraries by category
+│   ├── data_validation/
+│   │   └── malli.md
+│   ├── database/
+│   │   ├── next_jdbc.md
+│   │   ├── honeysql.md
+│   │   └── datalevin.md
+│   ├── data_formats/
+│   │   ├── cheshire.md
+│   │   └── clj_yaml.md
+│   ├── rest_api/
+│   │   ├── reitit.md
+│   │   └── liberator.md
+│   ├── observability/
+│   │   └── clj_otel.md
+│   └── [20+ more categories]
+├── testing/              # Test frameworks
+│   ├── kaocha.md
+│   └── matcher_combinators.md
+└── tooling/              # Development tools
+    ├── clj_kondo.md
+    └── rewrite_clj.md
+```
 
-## How Skills Work: Progressive Disclosure
+**All skills are single markdown files** with frontmatter at the top,
+not directories with SKILL.md files.
 
-Skills leverage a **three-level loading architecture** where content loads progressively as needed:
+## Complete Skill Creation Workflow
 
-### Level 1: Metadata (Always Loaded)
-**When**: At startup (included in system prompt)
-**Token Cost**: ~100 tokens per Skill
-**Content**: YAML frontmatter with `name` and `description`
+Follow this end-to-end process to create a high-quality skill:
+
+### Step 1: Choose Category and Name
+
+**Select the appropriate category:**
+- `language/` - Core Clojure language features
+- `clojure_mcp/` - Tool integration (REPL, eval, etc.)
+- `http_servers/` - Web server libraries
+- `libraries/<subcategory>/` - Third-party libraries (most skills go here)
+- `testing/` - Test frameworks and testing tools
+- `tooling/` - Development tools (linters, formatters, etc.)
+
+**Choose a clear filename:**
+```bash
+# Library name in snake_case
+malli.md              # For metosin/malli
+next_jdbc.md          # For seancorfield/next.jdbc
+clj_otel.md          # For steffan-westcott/clj-otel
+
+# Avoid version numbers or prefixes
+buddy.md              # Good
+buddy_core.md         # Only if genuinely separate from buddy-auth etc.
+```
+
+**Check if category exists:**
+```bash
+ls -la skills/libraries/
+# If your subcategory doesn't exist, create it:
+mkdir -p skills/libraries/your_category
+```
+
+### Step 2: Research the Library
+
+**Load and explore the library systematically:**
+
+```clojure
+;; 1. Load the library dynamically
+(require '[clojure.repl.deps :refer [add-lib]])
+(add-lib 'metosin/malli {:mvn/version "0.16.0"})
+
+;; 2. Discover available namespaces
+(clj-mcp.repl-tools/list-ns)
+;; Look for namespaces starting with the library name
+
+;; 3. Explore the main namespace
+(clj-mcp.repl-tools/list-vars 'malli.core)
+;; This shows all functions with documentation
+
+;; 4. Get detailed documentation for key functions
+(clj-mcp.repl-tools/doc-symbol 'malli.core/validate)
+
+;; 5. View source code to understand implementation
+(clj-mcp.repl-tools/source-symbol 'malli.core/validate)
+
+;; 6. Test basic examples
+(require '[malli.core :as m])
+(m/validate [:int] 42)
+;; => true
+
+;; 7. Test edge cases
+(m/validate [:int] nil)
+(m/validate [:int] "not-an-int")
+;; Document what happens!
+
+;; 8. Identify the 3-5 most common use cases
+;; - What problem does this library solve?
+;; - What are the top workflows users need?
+;; - What are common mistakes or gotchas?
+```
+
+**Check external documentation:**
+- GitHub README
+- Official documentation site
+- cljdoc.org API reference
+- Example projects using the library
+
+### Step 3: Determine Skill Complexity
+
+Choose the appropriate skill size based on library complexity:
+
+**Minimal Skill (50-100 lines)**
+
+- Simple, focused libraries
+- Single main use case
+- Example: kaocha.md (60 lines)
+- Structure: Frontmatter → Overview → Core Concepts → Basic patterns → Resources
+
+**Standard Skill (200-400 lines)**
+
+- Moderate complexity
+- 3-5 common workflows
+- Example: Most library skills
+- Structure: Full template (see below)
+
+**Comprehensive Skill (400-600 lines)**
+
+- Complex libraries with many features
+- 6-10 workflows
+- Multiple integration scenarios
+- Example: malli.md (450 lines), clj_otel.md (500 lines)
+- Structure: Full template + Advanced section
+
+**When to split:** If a skill exceeds 600 lines, consider whether
+you're documenting multiple related libraries that should be separate
+skills.
+
+### Step 4: Create Frontmatter
+
+**CRITICAL: Every skill MUST start with YAML frontmatter.**
+
+```markdown
+---
+name: library-name-skill
+description: |
+  One-line summary of WHAT it does. Use when [SPECIFIC USE CASES].
+  Use when the user mentions [KEYWORDS], [PROBLEM TYPES], or [DOMAIN CONTEXTS].
+---
+```
+
+**Name requirements:**
+
+- Lowercase, hyphens only
+- Max 64 characters
+- Descriptive and unique
+- No XML tags
+
+**Description requirements:**
+
+- Max 1024 characters
+- Must include BOTH:
+  - **WHAT**: What the library does
+  - **WHEN**: When to use it (trigger keywords)
+- No XML tags
+
+**Good frontmatter examples:**
 
 ```yaml
 ---
-name: clojure-string-manipulation
-description: Format, parse, and manipulate strings using Clojure string functions. Use when working with text processing, string formatting, or pattern matching.
+name: malli_schema_validation
+description: |
+  Validate data structures and schemas using Malli. Use when validating API
+  requests/responses, defining data contracts, building form validation, schema
+  validation, or when the user mentions schemas, validation, malli, data integrity,
+  type checking, data contracts, or runtime validation.
 ---
 ```
 
-the agent loads this at startup. This lightweight approach means you can
-install many Skills without context penalty—the agent only knows each
-Skill exists and when to use it.
-
-### Level 2: Instructions (Loaded When Triggered)
-**When**: When a Skill's description matches the user's request
-**Token Cost**: Under 5k tokens
-**Content**: Main body of SKILL.md (procedural guidance, workflows, examples)
-
-When an agent receives a request matching a Skill's description, the agent
-reads SKILL.md from the filesystem via bash. Only then does this
-content enter the context window.
-
-### Level 3: Resources & Code (Loaded As Needed)
-
-**When**: Only when explicitly referenced or needed
-**Token Cost**: Effectively unlimited (accessed via bash, not loaded into context)
-**Content**: Additional files (reference docs, scripts, templates, data)
-
-```
-skill-name/
-├── SKILL.md           # Level 2: Main instructions
-├── REFERENCE.md       # Level 3: Detailed API docs
-├── EXAMPLES.md        # Level 3: Complex examples
-└── scripts/
-    └── validate.clj   # Level 3: Utility scripts
+```yaml
+---
+name: http-kit-server
+description: |
+  Build high-performance async HTTP servers and WebSocket applications with http-kit.
+  Use when creating web servers, handling HTTP requests, building REST APIs,
+  WebSockets, or when the user mentions servers, HTTP, async I/O, or high concurrency.
+---
 ```
 
-**Key insight**: Files don't consume context until accessed. Skills
-can include comprehensive reference materials without context
-penalty. agents navigate Skills like referencing specific
-sections of an onboarding guide.
+**Poor frontmatter (missing WHEN):**
 
-## Skill File Structure
+```yaml
+---
+name: malli
+description: Data validation library for Clojure
+---
+```
 
-Every Skill requires `SKILL.md` with this structure:
+### Step 5: Write Quick Start
+
+**Goal: Working example in 2-5 minutes.**
+
+```markdown
+# Library Name
+
+## Quick Start
+
+[1-2 sentence overview of what the library does]
+
+```clojure
+;; Add dependency
+{:deps {group/artifact {:mvn/version "X.Y.Z"}}}
+
+;; Basic example showing the simplest use case
+(require '[library.core :as lib])
+
+(lib/basic-operation {:input "data"})
+;; => Expected output
+
+;; One more example showing a common pattern
+(lib/another-common-use-case data)
+;; => Expected output
+```
+
+**Key benefits:**
+
+- Benefit 1
+- Benefit 2
+- Benefit 3
+
+```
+
+**Test every example with clojure_eval!** If it doesn't work, fix it before writing more.
+
+### Step 6: Document Core Concepts
+
+**Explain 2-4 fundamental concepts:**
+
+```markdown
+## Core Concepts
+
+### Concept 1: [Name]
+
+[1-2 paragraphs explaining the concept]
+
+```clojure
+;; Concrete example demonstrating the concept
+(example-code)
+;; => result
+```
+
+### Concept 2: [Name]
+
+[Explanation with example]
+```
+
+**What to include:**
+- Key abstractions (what are the main types/functions?)
+- Mental models (how should users think about this?)
+- Terminology (what do special terms mean?)
+
+**What to skip:**
+- Implementation details
+- Historical context
+- Advanced theory
+
+### Step 7: Create Common Workflows
+
+**Document 3-8 workflows based on skill complexity:**
+
+```markdown
+## Common Workflows
+
+### Workflow 1: [Descriptive Name]
+
+[Brief description of what this workflow accomplishes]
+
+```clojure
+;; Step-by-step code with comments
+(require '[library.core :as lib])
+
+;; Setup
+(def config {...})
+
+;; Main operation
+(lib/operation config input)
+;; => Expected result
+
+;; Common variations
+(lib/operation config-variant input)
+;; => Different result
+```
+
+[Optional: Brief explanation of what's happening]
+```
+
+**Workflow priorities:**
+1. Most common use case (80% of users need this)
+2. Integration with other tools (Ring, Pedestal, etc.)
+3. Configuration and setup
+4. Error handling
+5. Advanced patterns
+6. Performance optimization
+
+**Test each workflow independently** with clojure_eval.
+
+### Step 8: Add Decision Guides
+
+**Help users choose between approaches:**
+
+```markdown
+## When to Use Each Approach
+
+**Use [Library/Approach A] when:**
+- Specific condition 1
+- Specific condition 2
+- Example: Validating API requests
+
+**Use [Alternative B] when:**
+- Different condition 1
+- Different condition 2
+- Example: Compile-time validation
+
+**Don't use either when:**
+- Validation is trivial
+- Performance is critical
+```
+
+### Step 9: Document Best Practices
+
+**Show what to do and what to avoid:**
+
+```markdown
+## Best Practices
+
+**DO:**
+- Practice 1 with brief rationale
+- Practice 2 with example
+- Practice 3 with when/why
+
+**DON'T:**
+- Anti-pattern 1 with why it's bad
+- Anti-pattern 2 with better alternative
+- Anti-pattern 3 with consequences
+```
+
+### Step 10: Add Common Issues
+
+**Document 3-5 problems users will encounter:**
+
+```markdown
+## Common Issues
+
+### Issue: [Problem Description]
+
+**Problem:** What the user sees/experiences
+
+```clojure
+;; Code that demonstrates the problem
+(broken-example)
+;; => Error or unexpected result
+```
+
+**Solution:** How to fix it
+
+```clojure
+;; Corrected code
+(fixed-example)
+;; => Expected result
+```
+
+[Optional: Explanation of why this happens]
+```
+
+**Where to find common issues:**
+- GitHub Issues
+- Stack Overflow questions
+- Your own experimentation
+- Edge cases you discovered during research
+
+### Step 11: Test and Validate
+
+**Complete validation checklist:**
+
+```bash
+# 1. Test all code examples
+# Copy each example to clojure_eval and verify it works
+
+# 2. Test edge cases
+# Try with nil, empty collections, wrong types
+
+# 3. Check spelling
+bb typos skills/your_category/your_skill.md
+
+# 4. Verify frontmatter
+# - Has name field?
+# - Has description field with WHAT and WHEN?
+# - Within character limits?
+
+# 5. Check structure
+# - Has Quick Start?
+# - Has Core Concepts?
+# - Has 3+ workflows?
+# - Has Best Practices?
+# - Has Common Issues?
+
+# 6. Build and test
+bb build clojure_build  # If skill is included in a prompt
+
+# 7. Read it as a new user
+# - Can someone productive in 5-10 minutes?
+# - Are examples clear?
+# - Is anything confusing?
+```
+
+### Step 12: Submit Skill
+
+```bash
+# 1. Verify file location
+ls -la skills/your_category/your_skill.md
+
+# 2. Check with list-skills
+bb list-skills | grep your_skill
+
+# 3. Run full validation
+bb typos
+
+# 4. Ready for use!
+```
+
+## Skill File Structure Template
+
+Use this template for standard-complexity skills:
 
 ```markdown
 ---
 name: skill-name
-description: What it does and when to use it
+description: |
+  What it does. Use when [use cases]. Use when the user mentions [keywords].
 ---
 
 # Skill Name
 
 ## Quick Start
-[Essential info to get started - 2-3 sentences]
 
-## Core Workflows
-[3-4 most common tasks with inline examples]
+[1-2 sentences overview]
 
-## Advanced Usage
-For detailed reference, see [REFERENCE.md](REFERENCE.md)
-For complex examples, see [EXAMPLES.md](EXAMPLES.md)
+```clojure
+;; Basic working example
+(require '[library.core :as lib])
+(lib/basic-operation {:input "data"})
+;; => Expected output
 ```
 
-### Optional Supporting Files
+**Key benefits:**
+- Benefit 1
+- Benefit 2
+- Benefit 3
 
-- `REFERENCE.md` - Comprehensive API documentation
-- `EXAMPLES.md` - Complex real-world scenarios
-- `scripts/*.clj` - Executable utilities
-- `templates/*.clj` - Code templates
-- `schemas/*.edn` - Data schemas
-- Any other reference materials
+## Core Concepts
+
+### Concept 1
+[Explanation with code example]
+
+### Concept 2
+[Explanation with code example]
+
+## Common Workflows
+
+### Workflow 1: [Name]
+[Code example with explanation]
+
+### Workflow 2: [Name]
+[Code example with explanation]
+
+### Workflow 3: [Name]
+[Code example with explanation]
+
+## When to Use Each Approach
+
+**Use [This] when:**
+- Condition
+
+**Use [Alternative] when:**
+- Different condition
+
+## Best Practices
+
+**DO:**
+- Good practice with rationale
+
+**DON'T:**
+- Anti-pattern with explanation
+
+## Common Issues
+
+### Issue: [Problem]
+**Problem:** Description
+**Solution:** Fix with code
+
+### Issue: [Problem 2]
+**Problem:** Description
+**Solution:** Fix with code
+
+## Advanced Topics
+[Optional: Link to external resources]
+
+## Resources
+- Official documentation
+- GitHub repository
+- API reference
+
+## Summary
+[2-3 sentences summarizing key points]
+```
 
 ## Metadata Requirements
 
 ### `name` Field
 - **Maximum**: 64 characters
 - **Format**: lowercase letters, numbers, hyphens only
-- **Cannot contain**: XML tags, reserved words
+- **Cannot contain**: XML tags, reserved words, spaces
 - **Examples**: `clojure-collections`, `malli-validation`, `http-kit-server`
 
 ### `description` Field
 - **Maximum**: 1024 characters
 - **Must be non-empty**
 - **Cannot contain**: XML tags
-- **Critical requirement**: Include BOTH what it does AND when to use it
+- **Must include BOTH**:
+  - WHAT it does (technology/library/concept)
+  - WHEN to use it (trigger keywords, use cases, problem domains)
 
-**Good description** (includes WHAT + WHEN):
+**Trigger keyword categories:**
+- **Technology names**: library name, alternate names, abbreviations
+- **Problem types**: "validation", "parsing", "HTTP server", "database access"
+- **Domain contexts**: "REST APIs", "web services", "data pipelines"
+- **User language**: What would a developer actually say?
+
+**Good trigger-rich description:**
 ```yaml
 description: |
-  Validate data structures and schemas using Malli. Use when validating
-  API requests/responses, defining data contracts, building form validation,
-  or when the user mentions schemas, validation, or data contracts.
+  Build REST APIs with Liberator's resource-oriented architecture. Use when creating
+  RESTful services, handling HTTP content negotiation, implementing HATEOAS, or when
+  the user mentions REST, API design, content types, HTTP status codes, or declarative
+  resource handling.
 ```
 
-**Poor description** (only says WHAT):
+**Poor description (too vague):**
 ```yaml
-description: Data validation library for Clojure
+description: REST API library
 ```
 
-The "WHEN to use it" part is crucial for discovery. Be explicit about:
-- **Keywords** users might mention ("validation", "schema", "data contract")
-- **Problem types** ("parsing data", "API validation", "form validation")
-- **Domain contexts** ("REST APIs", "configuration", "user input")
-
-## Content Organization Strategy
-
-Choose the right level for each content type:
-
-### Use Level 1 (Metadata) For
-- Skill name and discovery description
-- Focus on clarity and discoverability
-
-### Use Level 2 (SKILL.md) For
-- Quick start (5-10 minute time-to-value)
-- 3-5 most common workflows with examples
-- Best practices and anti-patterns
-- Decision guides (when to use approach A vs B)
-- Inline code examples (small, illustrative)
-- Troubleshooting common issues
-
-**Keep SKILL.md focused**: It should get someone productive quickly, not be exhaustive documentation.
-
-### Use Level 3 (Supporting Files) For
-- Comprehensive API reference (REFERENCE.md)
-- Complex multi-step examples (EXAMPLES.md)
-- Reusable utility scripts (scripts/)
-- Code templates (templates/)
-- Large datasets or schemas
-- External API documentation
-
-**No context penalty**: Bundle as much as you want. Files load only when needed.
-
-## Code vs. Instructions: When to Use Each
-
-### Use Prose Instructions (in SKILL.md) When
-- Teaching concepts and patterns
-- Explaining why something works
-- Providing flexible guidance
-- Working through examples interactively
-- The task requires context and understanding
-
-### Use Executable Scripts (in scripts/) When
-- Operations need deterministic, reliable execution
-- Complex but well-defined processes
-- Avoiding agents generating equivalent code
-- Running validations or transformations
-- **Token efficiency**: Scripts don't load into context, only output
-
-**Example**: Email validation
-```clojure
-; Don't put complex validation logic in SKILL.md
-; (Forces agents to regenerate the logic each time)
-
-; Do create scripts/validate-email.clj
-(ns validate-email)
-
-(defn valid-email? [email]
-  (and (string? email)
-       (re-matches #".+@.+\..+" email)))
-
-; Then reference from SKILL.md:
-; "To validate emails, use: `clojure scripts/validate-email.clj email@example.com`"
-```
-
-## Writing Effective SKILL.md
-
-Structure your main Skill content like this:
-
-```markdown
-# [Skill Name]
-
-## Quick Start
-[1-2 paragraphs showing the most basic usage. Goal: working example in 2 minutes]
-
-```clojure
-; Minimal working example
-(require '[library.core :as lib])
-(lib/basic-operation {:input "data"})
-```
-
-## Core Concepts
-[Explain 2-3 key ideas agents need to understand to use this effectively]
-
-## Common Workflows
-
-### Workflow 1: [Name]
-[Clear steps with inline example]
-
-```clojure
-; Example code
-```
-
-### Workflow 2: [Name]
-[Clear steps with inline example]
-
-### Workflow 3: [Name]
-[Clear steps with inline example]
-
-## When to Use Each Approach
-[Decision guide: when to use feature A vs feature B]
-
-## Best Practices
-[What to do and what to avoid]
-
-**Do**:
-- [Good practice with brief explanation]
-
-**Don't**:
-- [Anti-pattern with brief explanation]
-
-## Common Issues
-[2-3 most common problems and solutions]
-
-## Advanced Topics
-For comprehensive API documentation, see [REFERENCE.md](REFERENCE.md)
-For complex real-world examples, see [EXAMPLES.md](EXAMPLES.md)
-```
-
-## Discovery and Triggering
-
-Your Skill's `description` is the primary discovery mechanism. Make it specific and trigger-rich:
-
-**Good triggers**:
-```yaml
-# Triggers on: "HTTP server", "web server", "API endpoint", "REST"
-description: |
-  Build HTTP servers and REST APIs with http-kit. Use when creating web servers,
-  handling HTTP requests, building REST endpoints, or when the user mentions
-  servers, HTTP, web services, or APIs.
-```
-
-```yaml
-# Triggers on: "validation", "schema", "data contract", "validate"
-description: |
-  Validate data structures using Malli schemas. Use when validating API data,
-  defining data contracts, building forms, or when the user mentions validation,
-  schemas, data integrity, or type checking.
-```
-
-**Poor triggers**:
-```yaml
-# Too vague - when would this trigger?
-description: A Clojure HTTP library
-
-# Missing context - doesn't say WHEN
-description: Malli is a data validation library
-```
-
-## Validating Clojure Skills
-
-Before publishing a Skill, **always validate with clojure_eval**:
-
-### 1. Test All Code Examples
-```clojure
-; Verify each example works
-(require '[clojure.string :as str])
-(str/upper-case "hello")  ; => "HELLO"
-
-; Test edge cases
-(str/upper-case "")       ; => ""
-(str/upper-case nil)      ; What happens? Document it!
-```
-
-### 2. Verify Library Availability
-```clojure
-; Check if the library exists
-(clj-mcp.repl-tools/find-symbols "library-name")
-
-; Explore available functions
-(clj-mcp.repl-tools/list-vars 'library.core)
-
-; Get documentation
-(clj-mcp.repl-tools/doc-symbol 'library.core/function-name)
-```
-
-### 3. Test Scripts (if included)
-```bash
-clojure scripts/your-script.clj "test input"
-```
-
-### 4. Verify Documentation Accuracy
-- Do examples produce stated results?
-- Are edge cases documented?
-- Is performance guidance accurate?
-
-## Example: Well-Structured Clojure Skill
-
-Here's a template showing good structure:
-
-**File: SKILL.md**
-```markdown
----
-name: malli-validation
-description: |
-  Validate data structures and schemas using Malli. Use when validating
-  API requests/responses, defining data contracts, building form validation,
-  or when the user mentions schemas, validation, or data integrity.
----
-
-# Malli Data Validation
-
-## Quick Start
-
-Malli validates data against schemas. Schemas are just Clojure data:
-
-```clojure
-(require '[malli.core :as m])
-
-; Define a schema
-(def user-schema
-  [:map
-   [:name string?]
-   [:email string?]
-   [:age [:int {:min 0 :max 150}]]])
-
-; Validate data
-(m/validate user-schema {:name "Alice" :email "alice@example.com" :age 30})
-; => true
-
-(m/validate user-schema {:name "Bob" :age "thirty"})
-; => false
-```
-
-## Core Concepts
-
-### Schemas as Data
-Schemas are Clojure data structures, not special objects. This makes them composable and inspectable.
-
-### Validation vs Coercion
-- **Validation**: Check if data matches schema (returns true/false)
-- **Coercion**: Transform data to match schema (e.g., string "123" → int 123)
-
-## Common Workflows
-
-### Validating API Requests
-```clojure
-(def request-schema
-  [:map
-   [:user-id int?]
-   [:action [:enum "create" "update" "delete"]]
-   [:data map?]])
-
-(m/validate request-schema
-  {:user-id 42 :action "create" :data {:name "Test"}})
-; => true
-```
-
-### Getting Detailed Errors
-```clojure
-(m/explain user-schema {:name "Alice" :age "not-a-number"})
-; => {:value {:name "Alice" :age "not-a-number"}
-;     :errors [{:path [:age] :message "should be int"}]}
-```
-
-### Composing Schemas
-```clojure
-(def address-schema [:map [:street string?] [:city string?]])
-(def user-with-address
-  [:map
-   [:name string?]
-   [:address address-schema]])  ; Reuse schema
-```
-
-## When to Use Each Approach
-
-**Use Malli when**:
-- Validating external data (APIs, user input)
-- You need detailed error messages
-- Schemas should be inspectable/modifiable at runtime
-
-**Use clojure.spec when**:
-- You need generative testing
-- Working with existing spec-based libraries
-- Need instrumentation for development
-
-**Use simple predicates when**:
-- Validation is trivial (`string?`, `pos-int?`)
-- Performance is critical
-- No need for error messages
-
-## Best Practices
-
-**Do**:
-- Define schemas as constants for reuse
-- Use descriptive keys in maps
-- Provide human-readable error messages
-- Test schemas with valid and invalid data
-
-**Don't**:
-- Recreate schemas inline (define once, reuse)
-- Make schemas too strict (allow flexibility)
-- Ignore validation errors (always check return values)
-
-## Common Issues
-
-### Schema Doesn't Match Expected Structure
-```clojure
-; Wrong: expecting specific map keys
-[:map [:name string?]]  ; Doesn't allow extra keys by default
-
-; Right: allow extra keys
-[:map {:closed false} [:name string?]]
-```
-
-### Performance with Large Data
-Malli is fast, but validating huge nested structures can be slow. Consider:
-- Validate at boundaries (API entry/exit)
-- Use sampling for large collections
-- Cache compiled schemas
-
-## Advanced Topics
-
-For comprehensive schema reference, see [REFERENCE.md](REFERENCE.md)
-For complex validation patterns, see [EXAMPLES.md](EXAMPLES.md)
-```
-
-**File: REFERENCE.md** (Optional - detailed API)
-```markdown
-# Malli Complete Reference
-
-## Schema Types
-
-### Primitive Types
-- `:int` - Integer
-- `:double` - Double
-- `:string` - String
-- `:boolean` - Boolean
-- `:keyword` - Keyword
-- `:symbol` - Symbol
-- `:uuid` - UUID
-
-[... comprehensive API documentation ...]
-```
-
-**File: EXAMPLES.md** (Optional - complex scenarios)
-```markdown
-# Malli Advanced Examples
-
-## Example 1: Multi-level Nested Validation
-
-[... detailed real-world examples ...]
-
-## Example 2: Custom Validators
-
-[... detailed real-world examples ...]
-```
-
-## Multi-File Skill Example
-
-For complex Skills with many topics:
-
-**SKILL.md** - Quick start and core workflows (keeps context light)
-```markdown
-# Complex Library
-
-## Quick Start
-[5-10 minutes to basic usage]
-
-## Core Workflows
-[3-5 common patterns with examples]
-
-## Advanced Usage
-- Comprehensive API: [REFERENCE.md](REFERENCE.md)
-- Complex examples: [EXAMPLES.md](EXAMPLES.md)
-- Utility scripts: [scripts/README.md](scripts/README.md)
-```
-
-**REFERENCE.md** - Exhaustive API documentation
-**EXAMPLES.md** - Complex real-world scenarios
-**scripts/** - Executable utilities
-
-This organization means:
-1. Common tasks don't load extra files (fast, efficient)
-2. Advanced work pulls in reference materials on-demand
-3. No context penalty for bundled content that isn't used
-
-## Best Practices for Clojure Skills
-
-1. **Test Everything**: Use `clojure_eval` to validate all code examples
-2. **Progressive Disclosure**: Quick start first, details in separate files
-3. **Show Alternatives**: When multiple approaches exist, explain when to use each
-4. **Include Edge Cases**: What happens with `nil`, empty collections, invalid types?
-5. **Provide Decision Guides**: Help agents choose between approaches
-6. **Link to Resources**: Reference official docs, GitHub repos
-7. **Keep SKILL.md Focused**: 3-5 core workflows, not exhaustive docs
-8. **Be Explicit About Performance**: When does it get slow? When is it fast?
-9. **Document Gotchas**: Common mistakes and how to avoid them
-10. **Use Scripts for Complexity**: Don't make agents recreate complex logic
-
-## Security Considerations
-
-**Only create Skills from trusted sources**. Skills can execute code and invoke tools, so:
-
-- Audit all code thoroughly
-- Be cautious with Skills fetching external data
-- Avoid Skills with unexpected network calls
-- Treat Skill creation like installing software
-- Never use untrusted Skills in production
-
-## Checklist: Before Publishing a Skill
-
-- [ ] Metadata uses proper name format (lowercase, hyphens, max 64 chars)
-- [ ] Description includes BOTH what it does AND when to use it
-- [ ] Description includes trigger keywords for discovery
-- [ ] All code examples tested with `clojure_eval`
-- [ ] SKILL.md has Quick Start section (5-10 minute time-to-value)
-- [ ] SKILL.md has 3-5 core workflows with inline examples
-- [ ] Advanced content moved to REFERENCE.md or EXAMPLES.md
-- [ ] Scripts tested and documented (if included)
-- [ ] Edge cases and error handling covered
-- [ ] Best practices and anti-patterns documented
+## When to Use Different Skill Sizes
+
+### Minimal Skills (50-100 lines)
+
+**Use for:**
+- Simple, single-purpose libraries
+- Well-known libraries where users need a quick reference
+- Libraries with one main workflow
+
+**Structure:**
+- Frontmatter
+- Quick Start (10-20 lines)
+- Core Concepts (20-30 lines)
+- 1-2 Common Patterns (20-30 lines)
+- Resources (5-10 lines)
+
+**Example:** kaocha.md
+
+### Standard Skills (200-400 lines)
+
+**Use for:**
+- Most library skills
+- Libraries with multiple use cases
+- Common integration scenarios
+
+**Structure:**
+- Full template (see above)
+- 3-5 workflows
+- Best practices section
+- Common issues section
+
+**Example:** Most skills in the repository
+
+### Comprehensive Skills (400-600 lines)
+
+**Use for:**
+- Complex libraries with many features
+- Libraries requiring detailed integration examples
+- Critical libraries that deserve thorough documentation
+
+**Structure:**
+- Full template
+- 6-10 workflows
+- Multiple integration scenarios
+- Advanced topics section
+- Extensive best practices
+
+**Example:** malli.md, clj_otel.md
+
+## Validation Checklist
+
+Use this before publishing:
+
+**Frontmatter:**
+- [ ] Has `name` field (lowercase, hyphens, max 64 chars)
+- [ ] Has `description` field
+- [ ] Description includes WHAT (technology/library)
+- [ ] Description includes WHEN (use cases, keywords)
+- [ ] Description within 1024 characters
+- [ ] No XML tags in frontmatter
+
+**Content Structure:**
+- [ ] Has Quick Start section
+- [ ] Quick Start has working code example
+- [ ] Has Core Concepts section (2-4 concepts)
+- [ ] Has Common Workflows section (3+ workflows)
+- [ ] Has Best Practices section
+- [ ] Has Common Issues section (3+ issues)
+
+**Code Quality:**
+- [ ] All examples tested with `clojure_eval`
+- [ ] Edge cases documented (nil, empty, errors)
+- [ ] Examples include expected output
+- [ ] Code follows Clojure style conventions
+
+**Documentation Quality:**
+- [ ] Spelling checked with `bb typos`
+- [ ] No XML tags in content
+- [ ] Cross-references use correct markdown links
+- [ ] External resources linked
+- [ ] Performance considerations mentioned (if relevant)
+
+**Practical Value:**
+- [ ] User can be productive in 5-10 minutes
+- [ ] Examples are realistic and practical
 - [ ] Decision guides provided (when to use X vs Y)
-- [ ] Cross-references between files use correct markdown links
-- [ ] No XML tags in frontmatter fields
-- [ ] Performance considerations documented
-- [ ] Common issues and solutions included
+- [ ] Common mistakes addressed
+- [ ] Integration examples included (if applicable)
+
+## Tools Available for Skill Creation
+
+### Core Tools
+
+**`clojure_eval`** - Evaluate Clojure code
+```clojure
+;; Test examples directly
+(require '[malli.core :as m])
+(m/validate [:int] 42)
+```
+
+**`clj-mcp.repl-tools/list-ns`** - Discover namespaces
+```clojure
+(clj-mcp.repl-tools/list-ns)
+;; See all available namespaces
+```
+
+**`clj-mcp.repl-tools/list-vars`** - List functions in namespace
+```clojure
+(clj-mcp.repl-tools/list-vars 'malli.core)
+;; See all functions with documentation
+```
+
+**`clj-mcp.repl-tools/doc-symbol`** - Get function documentation
+```clojure
+(clj-mcp.repl-tools/doc-symbol 'malli.core/validate)
+```
+
+**`clj-mcp.repl-tools/source-symbol`** - View source code
+```clojure
+(clj-mcp.repl-tools/source-symbol 'malli.core/validate)
+```
+
+**`clj-mcp.repl-tools/find-symbols`** - Search for symbols
+```clojure
+(clj-mcp.repl-tools/find-symbols "validate")
+```
+
+**`clojure.repl.deps/add-lib`** - Load libraries dynamically
+```clojure
+(require '[clojure.repl.deps :refer [add-lib]])
+(add-lib 'metosin/malli {:mvn/version "0.16.0"})
+```
+
+### Research Workflow
+
+**Complete workflow for researching a new library:**
+
+```clojure
+;; 1. Load the library
+(require '[clojure.repl.deps :refer [add-lib]])
+(add-lib 'group/artifact {:mvn/version "X.Y.Z"})
+
+;; 2. Find library namespaces
+(clj-mcp.repl-tools/list-ns)
+;; Look for namespaces matching the library name
+
+;; 3. Explore main namespace
+(clj-mcp.repl-tools/list-vars 'library.core)
+;; Read through all available functions
+
+;; 4. Check documentation for key functions
+(clj-mcp.repl-tools/doc-symbol 'library.core/main-function)
+
+;; 5. View implementations
+(clj-mcp.repl-tools/source-symbol 'library.core/main-function)
+
+;; 6. Test basic usage
+(require '[library.core :as lib])
+(lib/main-function example-input)
+;; => See what happens
+
+;; 7. Test edge cases
+(lib/main-function nil)
+(lib/main-function [])
+(lib/main-function "wrong type")
+;; => Document errors and behavior
+
+;; 8. Identify patterns
+;; - What's the main use case?
+;; - What are common variations?
+;; - What integrations are typical?
+
+;; 9. Check for gotchas
+;; - Performance characteristics
+;; - Configuration requirements
+;; - Common mistakes
+```
+
+## Best Practices for Skill Creation
+
+**DO:**
+- Test every single code example with `clojure_eval`
+- Include expected output in comments
+- Document edge cases (nil, empty, errors)
+- Show realistic, practical examples
+- Provide decision guides for alternatives
+- Link to official documentation
+- Keep Quick Start minimal and focused
+- Use clear, descriptive workflow names
+- Add rationale for best practices
+- Document common issues you discover
+
+**DON'T:**
+- Copy examples without testing them
+- Skip edge case documentation
+- Use toy examples that aren't practical
+- Forget to include WHEN in description
+- Create skills longer than 600 lines
+- Mix multiple unrelated libraries
+- Use overly complex examples
+- Skip the Common Issues section
+- Forget to check spelling
+- Ignore user's likely mental model
+
+## Common Skill Creation Problems
+
+### Problem: Code Examples Don't Work
+
+**Symptoms:**
+- Examples throw errors when tested
+- Output doesn't match what's documented
+- Required namespaces not loaded
+
+**Solution:**
+```clojure
+;; Always test in clojure_eval FIRST
+(require '[library.core :as lib])
+;; Did this work? If not, library might not be loaded
+
+;; Load it dynamically
+(require '[clojure.repl.deps :refer [add-lib]])
+(add-lib 'group/artifact {:mvn/version "X.Y.Z"})
+
+;; Now test your example
+(lib/function arg)
+;; Verify output matches documentation
+```
+
+### Problem: Can't Find Main Namespace
+
+**Symptoms:**
+- Don't know which namespace to require
+- Multiple namespaces, unclear which is main
+
+**Solution:**
+```clojure
+;; List all namespaces
+(clj-mcp.repl-tools/list-ns)
+
+;; Look for patterns like:
+;; - library.core (often main)
+;; - library.api (public API)
+;; - library.alpha (new API)
+
+;; Check each one
+(clj-mcp.repl-tools/list-vars 'library.core)
+(clj-mcp.repl-tools/list-vars 'library.api)
+
+;; The one with the most important functions is usually main
+```
+
+### Problem: Skill Too Long
+
+**Symptoms:**
+- Skill exceeds 600 lines
+- Trying to document everything
+- Multiple related but separate concepts
+
+**Solution:**
+- Ask: Are these actually multiple libraries that need separate skills?
+- Focus on 3-5 most common workflows
+- Move advanced topics to "Resources" section
+- Link to external documentation for comprehensive details
+- Consider if you're documenting the library or writing a tutorial
+
+### Problem: Skill Too Short
+
+**Symptoms:**
+- Skill under 50 lines
+- Just a Quick Start with no workflows
+- Missing practical value
+
+**Solution:**
+- Add 2-3 more workflows showing common use cases
+- Include integration examples (Ring, Pedestal, etc.)
+- Add Common Issues section
+- Document edge cases and error handling
+- Show before/after examples
+
+### Problem: Unclear When to Use
+
+**Symptoms:**
+- Description doesn't mention specific use cases
+- No decision guide comparing alternatives
+- Users won't know when to choose this library
+
+**Solution:**
+```markdown
+## When to Use Each Approach
+
+**Use [This Library] when:**
+- Specific technical requirement (e.g., "Need async HTTP")
+- Specific use case (e.g., "Building REST APIs")
+- Specific context (e.g., "High concurrency required")
+
+**Use [Alternative] when:**
+- Different requirement
+- Different use case
+- Different context
+
+**Don't use either when:**
+- Simple case that doesn't need a library
+- Performance/simplicity is critical
+```
+
+### Problem: Examples Too Simple or Too Complex
+
+**Symptoms:**
+- Examples are toy code (foo, bar, baz)
+- Examples are full applications
+- Users can't translate to real use
+
+**Solution:**
+- Use realistic domain examples (users, orders, requests)
+- Keep examples focused on ONE concept
+- Show progression: simple → realistic → complex
+- Include just enough context to understand
+- Balance between "Hello World" and production code
 
 ## Building and Testing Skills
-
-This repository uses **Babashka (bb)** for task automation.
 
 ### Build Commands
 
@@ -583,9 +932,18 @@ bb typos
 
 # Auto-fix typos
 bb typos-fix
+
+# Run tests (if applicable)
+bb test
+
+# Lint code
+bb lint
+
+# Format code
+bb fmt
 ```
 
-### prompt Compression (Optional)
+### Prompt Compression (Optional)
 
 Reduce token usage by 10-20x using LLMLingua:
 
@@ -596,9 +954,6 @@ bb setup-python
 # Build and compress in one step
 bb build-compressed clojure_skill_builder --ratio 10
 
-# Or compress existing files
-bb compress _build/clojure_skill_builder.md --ratio 10
-
 # Compress individual skills
 bb compress-skill skills/libraries/data_validation/malli.md --ratio 10
 ```
@@ -608,87 +963,129 @@ bb compress-skill skills/libraries/data_validation/malli.md --ratio 10
 - 5-10x: Balanced approach, good default
 - 10-20x: Aggressive saving, semantic meaning intact
 
-See QUICKSTART_COMPRESSION.md for detailed guide.
+## Security Considerations
 
-## Tools Available for Skill Creation
+**Only create Skills from trusted sources.** Skills document code that agents will execute, so:
 
-Use these tools to understand Clojure features deeply before documenting:
+- Audit examples thoroughly
+- Be cautious documenting libraries with security implications
+- Avoid documenting libraries with unexpected network calls
+- Treat Skill creation like code review
+- Never document untrusted or malicious libraries
 
-- **`clojure_eval`**: Evaluate Clojure code to validate examples
-- **`clojure-mcp_read_file`**: Read and explore existing code
-- **`clojure-mcp_grep`**: Search for functions and patterns
-- **`clj-mcp.repl-tools/list-ns`**: Discover available namespaces
-- **`clj-mcp.repl-tools/list-vars`**: List functions in a namespace
-- **`clj-mcp.repl-tools/doc-symbol`**: Get function documentation
-- **`clj-mcp.repl-tools/source-symbol`**: View function source
-- **`clj-mcp.repl-tools/find-symbols`**: Search for symbols by pattern
-- **`clojure.repl.deps/add-lib`**: Load libraries dynamically into the REPL
-- **File tools**: Write and edit Skill files
+## Example: Real Skills from Repository
 
-### Loading Libraries Dynamically
+### Minimal Skill Example (kaocha.md)
 
-When creating Skills for libraries not already on the classpath, you can load them dynamically using `clojure.repl.deps/add-lib`:
+```markdown
+---
+name: kaocha_test_runner
+description: |
+  Full-featured test runner for Clojure with watch mode, coverage, and plugins.
+  Use when running tests, test-driven development (TDD), CI/CD pipelines, coverage
+  reporting, or when the user mentions testing, test runner, kaocha, watch mode,
+  continuous testing, or test automation.
+---
 
-```clojure
-;; Load a library at the REPL
-(require '[clojure.repl.deps :refer [add-lib add-libs]])
+# Kaocha
 
-;; Add a single library
-(add-lib 'org.clojure/data.csv {:mvn/version "1.0.1"})
+A comprehensive test runner for Clojure with support for multiple test libraries and powerful plugin system.
 
-;; Now require and use it
-(require '[clojure.data.csv :as csv])
-(csv/write-csv *out* [["a" "b" "c"]])
+## Overview
 
-;; Add multiple libraries at once (more efficient)
-(add-libs '{org.clojure/data.json {:mvn/version "2.5.0"}
-            metosin/malli {:mvn/version "0.16.0"}})
-```
+Kaocha is a modern test runner that works with clojure.test, specs, and other testing frameworks. It provides detailed reporting, watch mode, and extensibility through plugins.
 
-**When to use `add-lib`:**
-- Testing libraries before creating Skills
-- Exploring API surfaces and function signatures
-- Validating code examples with actual library behavior
-- Checking library compatibility with current Clojure version
+## Core Concepts
 
-**Important notes:**
-- Libraries are added to the REPL session, not permanently to project
-- Once added, libraries persist for the REPL session
-- You still need to `require` the namespace after loading
-- Requires Clojure 1.12+ and a valid parent DynamicClassLoader
-
-**Example workflow for creating a Skill:**
+**Running Tests**: Execute tests with Kaocha.
 
 ```clojure
-;; 1. Load the library
-(require '[clojure.repl.deps :refer [add-lib]])
-(add-lib 'buddy/buddy-core {:mvn/version "1.11.0"})
+(require '[kaocha.runner :as runner])
 
-;; 2. Explore what's available
-(require '[buddy.core.hash :as hash])
-(clj-mcp.repl-tools/list-vars 'buddy.core.hash)
-
-;; 3. Test examples
-(hash/sha256 "hello world")
-;; => #object["[B" 0x1234abcd "[B@1234abcd"]
-
-;; 4. Document the behavior in your Skill
-;; Now you know exactly how it works!
+; In terminal:
+; bb test                      # Run all tests
+; bb test --watch             # Watch mode
+; bb test --focus my.test     # Run specific test
 ```
 
-This allows you to create accurate, tested Skills for any Clojure library without needing to add it to the project dependencies.
+[... 60 total lines]
+```
+
+### Standard Skill Example (malli.md)
+
+```markdown
+---
+name: malli_schema_validation
+description: |
+  Validate data structures and schemas using Malli. Use when validating API
+  requests/responses, defining data contracts, building form validation, schema
+  validation, or when the user mentions schemas, validation, malli, data integrity,
+  type checking, data contracts, or runtime validation.
+---
+
+# Malli Data Validation
+
+## Quick Start
+
+Malli validates data against schemas. Schemas are just Clojure data structures:
+
+```clojure
+(require '[malli.core :as m])
+
+;; Define a schema
+(def user-schema
+  [:map
+   [:name string?]
+   [:email string?]
+   [:age int?]])
+
+;; Validate data
+(m/validate user-schema {:name "Alice" :email "alice@example.com" :age 30})
+;; => true
+```
+
+## Core Concepts
+
+### Schemas as Data
+
+[Explanation]
+
+### Validation vs Coercion
+
+[Explanation]
+
+## Common Workflows
+
+### Workflow 1: API Request Validation
+
+[Code example]
+
+### Workflow 2: Composing Schemas
+
+[Code example]
+
+### Workflow 3: Optional and Default Values
+
+[Code example]
+
+[... continues for 450 lines]
+```
 
 ## Summary: What Makes an Effective Clojure Skill
 
-1. **Clear, discoverable metadata** with trigger-rich descriptions
-2. **Focused instructions** that provide quick time-to-value
-3. **Progressive disclosure** - common tasks first, advanced topics in separate files
-4. **Thoroughly validated** with real Clojure evaluation
-5. **Decision guides** that help agents choose the right approach
-6. **Practical examples** with edge cases documented
-7. **Scripts for complexity** - don't make agents recreate logic
-8. **Composable design** - Skills work together to build capabilities
+1. **Clear frontmatter** with trigger-rich description (WHAT + WHEN)
+2. **Quick working example** - productive in 2-5 minutes
+3. **Core concepts** - 2-4 fundamental ideas explained clearly
+4. **Practical workflows** - 3-8 realistic, tested examples
+5. **Decision guides** - when to use this vs alternatives
+6. **Best practices** - DOs and DON'Ts with rationale
+7. **Common issues** - problems users WILL encounter with solutions
+8. **Validated code** - every example tested with clojure_eval
+9. **Appropriate size** - 50-600 lines based on complexity
+10. **Single file** - everything in one markdown file with frontmatter
 
-The goal: Transform agents into a Clojure specialist who can work effectively with libraries, patterns, and best practices without needing to repeatedly explain the same concepts.
+**The goal:** Transform agents into Clojure specialists who can work
+effectively with libraries, patterns, and best practices without
+needing repeated explanation.
 
 Now go create excellent Clojure Skills!

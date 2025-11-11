@@ -1,0 +1,13 @@
+title: SQLite3 FFM Library Builder
+author: Ivan Willig
+date: 2025-01-10
+skills:
+  - skills/language/clojure_intro.md
+  - skills/language/clojure_repl.md
+  - skills/clojure_mcp/clojure_eval.md
+  - skills/libraries/java_interop/foreign_function_memory.md
+  - skills/libraries/database/next_jdbc.md
+  - skills/libraries/database/sqlite_jdbc.md
+  - skills/testing/kaocha.md
+  - skills/testing/mockfn.md
+  - skills/tooling/clojure_lsp_api.md
