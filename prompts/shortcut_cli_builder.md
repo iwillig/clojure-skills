@@ -1,3 +1,8 @@
+---
+name: Shortcut CLI Builder
+description: |
+  Specialized agent for building and maintaining the shortcut-cli project - a CLI for the Shortcut REST API
+---
 # Shortcut CLI Builder Agent
 
 You are a specialized Clojure agent for building and maintaining the

@@ -276,26 +276,27 @@ bb help
 
 #### `bb list-skills` - Skills Inventory
 
-Lists all skills in a formatted table with metadata:
+Lists all skills in a formatted table with metadata extracted via pandoc:
 
 ```bash
 bb list-skills
 
 # Output shows:
-# CATEGORY      NAME                          PATH                         SIZE   TOKENS
-# language      clojure_introduction          language/clojure_intro.md   2.7KB     682
-# libraries     malli_schema_validation       libraries/.../malli.md     10.8KB   2,773
+# CATEGORY      NAME                          DESCRIPTION                                         SIZE   TOKENS
+# language      clojure_introduction          Introduction to Clojure fundamentals, immutabil...  2.7KB     682
+# libraries     malli_schema_validation       Validate data structures and schemas using Mall...  10.8KB   2,773
 # ...
-# TOTAL         63 skills                                                647KB  165,555
+# TOTAL         63 skills                                                                         647KB  165,555
 ```
 
 **Features:**
 - Organized by category (language, libraries, testing, tooling, etc.)
-- Shows skill name from frontmatter metadata
-- File path relative to skills/ directory
+- Shows skill name from YAML frontmatter metadata (via pandoc)
+- Shows truncated description (80 chars) from YAML frontmatter (HTML tags stripped)
 - File size in human-readable format (KB/MB)
 - Estimated token count (Anthropic ~4 chars/token)
 - Total size and token count at bottom
+- Metadata extracted using `pandoc --template prompt_templates/metadata.plain`
 
 **Use cases:**
 - Get overview of available skills
@@ -376,22 +377,28 @@ ERROR: Missing skill files:
 
 #### `bb list-prompts` - Built Prompts Overview
 
-Lists all built prompts with size and token information:
+Lists all built prompts with filename, metadata, size, and token information:
 
 ```bash
 bb list-prompts
 
 # Output:
-# PROMPT                    SIZE      CHARS      TOKENS
-# clojure_build            234.5KB   240,123    60,031
-# clojure_skill_builder    345.2KB   353,456    88,364
-# TOTAL                    579.7KB   593,579   148,395
+# FILENAME                      NAME                      DESCRIPTION                      SIZE      CHARS      TOKENS
+# clojure_build.md              General Clojure Agent     A general purpose system...     234.5KB   240,123    60,031
+# clojure_build.compressed.md   General Clojure Agent     A general purpose system...      40.3KB    41,312    10,328
+# clojure_skill_builder.md      Clojure Skill Builder     Agent specialized in...         345.2KB   353,456    88,364
+# TOTAL                                                                                   579.7KB   593,579   148,395
 ```
 
 **Features:**
+- Shows built filename (e.g., `clojure_build.md`, `clojure_build.compressed.md`)
+- Shows prompt name from YAML frontmatter metadata (via pandoc)
+- Shows truncated description (60 chars) from YAML frontmatter (HTML tags stripped)
 - Shows file size, character count, and estimated tokens
 - Formatted with thousands separators for readability
 - Total row showing combined statistics
+- Metadata extracted from source prompt files in `prompts/` directory
+- Falls back to source prompt metadata for built/compressed files
 - Note about token estimation method
 
 #### `bb ci` - CI Pipeline with Better Feedback

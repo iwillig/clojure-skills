@@ -73,7 +73,34 @@
                       end-idx (find-end lines)]
                   (when end-idx
                     (yaml/parse-string
-                     (str/join "\n" (take (dec end-idx) (drop 1 lines))))))))))
+                     (str/join "\n" (take (dec end-idx) (drop 1 lines)))))))))
+
+          (defn extract-metadata-with-pandoc [file-path]
+            (try
+              (let [result (p/shell {:out :string
+                                     :err :string
+                                     :continue true}
+                                    (str "pandoc --template prompt_templates/metadata.plain " file-path))]
+                (if (zero? (:exit result))
+                  (let [json-str (str/trim (:out result))]
+                    (when (and (not (str/blank? json-str))
+                               (not= "{}" json-str))
+                      (yaml/parse-string json-str)))
+                  nil))
+              (catch Exception e
+                nil)))
+
+          (defn strip-html-tags [html-str]
+            (when html-str
+              (-> html-str
+                  (str/replace (re-pattern "<[^>]+>") "")
+                  (str/replace (re-pattern "&[^;]+;") " ")
+                  (str/trim))))
+
+          (defn truncate-string [s max-length]
+            (if (and s (> (count s) max-length))
+              (str (subs s 0 (- max-length 3)) "...")
+              (or s ""))))
 
   ;; Build a specific prompt file by name
   build
@@ -149,15 +176,28 @@
                                                 (str/ends-with? (str f) ".md"))
                                               (fs/list-dir build-dir)))
 
-                   ;; Collect data for each prompt
+;; Collect data for each prompt with metadata
                    prompts (for [file prompt-files]
                              (let [file-path (str file)
+                                   filename (fs/file-name file)
+                                   base-name (-> filename
+                                                 (str/replace ".compressed.md" "")
+                                                 (str/replace ".md" ""))
+                                   source-prompt (str "prompts/" base-name ".md")
+                                   metadata (if (fs/exists? source-prompt)
+                                              (extract-metadata-with-pandoc source-prompt)
+                                              (extract-metadata-with-pandoc file-path))
                                    content (slurp file-path)
                                    file-size (fs/size file)
                                    char-count (count content)
                                    token-count (estimate-tokens content)
-                                   filename (fs/file-name file)]
-                               {:name (str/replace filename ".md" "")
+                                   prompt-name (or (get metadata :name)
+                                                   (get metadata :title)
+                                                   base-name)
+                                   description (strip-html-tags (get metadata :description ""))]
+                               {:filename filename
+                                :name prompt-name
+                                :description description
                                 :file file-path
                                 :size file-size
                                 :size-str (format-size file-size)
@@ -172,14 +212,18 @@
                (info-msg "Built Prompts")
 
                (println)
-               (table/print-table [:name :size :chars :tokens]
+               (table/print-table [:filename :name :description :size :chars :tokens]
                                   (concat
                                    (for [p prompts]
-                                     {:name (:name p)
+                                     {:filename (:filename p)
+                                      :name (:name p)
+                                      :description (truncate-string (:description p) 60)
                                       :size (:size-str p)
                                       :chars (format-number (:chars p))
                                       :tokens (format-number (:tokens p))})
-                                   [{:name "TOTAL"
+                                   [{:filename "TOTAL"
+                                     :name ""
+                                     :description ""
                                      :size (format-size total-size)
                                      :chars (format-number total-chars)
                                      :tokens (format-number total-tokens)}]))
@@ -298,9 +342,9 @@
    :task (let [skills-dir "skills"
                skill-files (sort (map str (fs/glob skills-dir "**/*.md")))
 
-               ;; Parse all skills
+               ;; Parse all skills with pandoc metadata
                skills (for [file-path skill-files]
-                        (let [metadata (extract-frontmatter file-path)
+                        (let [metadata (extract-metadata-with-pandoc file-path)
                               file-size (fs/size file-path)
                               content (slurp file-path)
                               char-count (count content)
@@ -308,13 +352,17 @@
                               relative-path (str/replace file-path
                                                          (str (fs/file skills-dir) "/")
                                                          "")
-                              category (first (str/split relative-path (re-pattern "/")))]
+                              category (first (str/split relative-path (re-pattern "/")))
+                              skill-name (or (get metadata :name)
+                                             (get metadata :title)
+                                             (str/replace (fs/file-name file-path) ".md" ""))
+                              description (strip-html-tags (get metadata :description ""))]
                           {:category category
-                           :name (get metadata :name "unknown")
+                           :name skill-name
                            :path relative-path
                            :size (format-size file-size)
                            :tokens (format-number token-count)
-                           :description (get metadata :description "")}))
+                           :description description}))
 
                ;; Calculate totals
                total-size (reduce + (map (fn [s] (fs/size (str "skills/" (:path s)))) skills))
@@ -323,12 +371,13 @@
            (info-msg "Available Skills")
 
            (println)
-           (table/print-table [:category :name :path :size :tokens]
+           (table/print-table [:category :name :description :size :tokens]
                               (concat
-                               (sort-by (juxt :category :name) skills)
+                               (for [s (sort-by (juxt :category :name) skills)]
+                                 (assoc s :description (truncate-string (:description s) 80)))
                                [{:category "TOTAL"
                                  :name (str (count skills) " skills")
-                                 :path ""
+                                 :description ""
                                  :size (format-size total-size)
                                  :tokens (format-number total-tokens)}]))
 
