@@ -41,7 +41,7 @@
                                     (fn [idx arg] (when (= "--ratio" arg) idx))
                                     args))
                   ratio-arg (when ratio-idx (nth args (inc ratio-idx) nil))]
-              (if ratio-arg (parse-double ratio-arg) 10.0)))
+              (if ratio-arg (parse-double ratio-arg) 2.0)))
 
           (defn estimate-tokens [text]
             (Math/ceil (/ (count text) 4.0)))
@@ -421,12 +421,12 @@
 
            (println)
            (println "You can now use:")
-           (println "  bb compress <name> --ratio 10")
-           (println "  bb build-compressed <name> --ratio 10")
-           (println "  bb compress-skill skills/path/to/file.md --ratio 10"))}
+           (println "  bb compress <name> --ratio 2")
+           (println "  bb build-compressed <name> --ratio 3")
+           (println "  bb compress-skill skills/path/to/file.md --ratio 2"))}
 
   compress
-  {:doc "Compress a built prompt file using LLMLingua\nUsage: bb compress clojure_skill_builder --ratio 10"
+  {:doc "Compress a built prompt file using LLMLingua (default: 2x ratio)\nUsage: bb compress clojure_skill_builder [--ratio 2]"
    :task (let [args *command-line-args*
                name (first args)
                ratio (get-ratio-arg)
@@ -462,7 +462,7 @@
                  (System/exit 1)))))}
 
   compress-skill
-  {:doc "Compress a single skill file\nUsage: bb compress-skill skills/libraries/data_validation/malli.md --ratio 10"
+  {:doc "Compress a single skill file (default: 2x ratio)\nUsage: bb compress-skill skills/libraries/data_validation/malli.md [--ratio 2]"
    :task (let [args *command-line-args*
                input-file (first args)
                ratio (get-ratio-arg)
