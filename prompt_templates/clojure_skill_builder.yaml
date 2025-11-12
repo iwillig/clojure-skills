@@ -1,9 +1,15 @@
+---
 title: Clojure Skill Builder
 author: Ivan Willig
 date: 2025-11-06
 skills:
+  - skills/llm_agent/agent_loop.md
   - skills/language/clojure_intro.md
   - skills/language/clojure_repl.md
   - skills/clojure_mcp/clojure_eval.md
   - skills/testing/clojure_test.md
   - skills/tooling/babashka.md
+
+  - skills/libraries/logging/mulog.md
+
+  - skills/libraries/data_formats/pretty.md

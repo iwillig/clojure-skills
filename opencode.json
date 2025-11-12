@@ -4,10 +4,95 @@
   "model": "anthropic/claude-sonnet-4-5",
   "autoupdate": true,
   "agent": {
+    "clojure_build": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/clojure_build.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": false,
+        "bash": true
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    },
+
+    "clojure_build_compressed": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/clojure_build.compressed.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": false,
+        "bash": true
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    },
+
     "clojure_skill_builder": {
-      "mode": "primary",
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/clojure_skill_builder.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": false,
+        "bash": true
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    },
+    "clojure_skill_builder_compressed": {
       "model": "anthropic/claude-sonnet-4-5",
       "prompt": "{file:./_build/clojure_skill_builder.compressed.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": false,
+        "bash": true
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    },
+    "shortcut_cli_builder": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/shortcut_cli_builder.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": false,
+        "bash": true
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    },
+    "shortcut_cli_builder_compressed": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/shortcut_cli_builder.compressed.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": false,
+        "bash": true
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    },
+    "sqlite3_ffm_builder": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/sqlite3_ffm_builder.md}",
       "tools": {
         "write": true,
         "edit": true,

@@ -15,7 +15,7 @@
              [babashka.process :as p]
              [clj-yaml.core :as yaml]
              [clojure.string :as str]
-             [clojure.pprint :as pp])
+             [clj-commons.format.table :as table])
 
   :init (do
           ;; Shared utility functions
@@ -73,27 +73,7 @@
                       end-idx (find-end lines)]
                   (when end-idx
                     (yaml/parse-string
-                     (str/join "\n" (take (dec end-idx) (drop 1 lines)))))))))
-
-          (defn print-table [rows]
-            (when (seq rows)
-              (let [;; Calculate column widths
-                    col-keys (keys (first rows))
-                    col-widths (into {}
-                                     (for [k col-keys]
-                                       [k (apply max (map (fn [r] (count (str (get r k)))) rows))]))
-
-                    ;; Format a single row
-                    format-row (fn [row]
-                                 (str/join "  "
-                                           (for [k col-keys]
-                                             (let [val (str (get row k))
-                                                   width (get col-widths k)]
-                                               (format (str "%-" width "s") val)))))]
-
-                ;; Print all rows
-                (doseq [row rows]
-                  (println "  " (format-row row)))))))
+                     (str/join "\n" (take (dec end-idx) (drop 1 lines))))))))))
 
   ;; Build a specific prompt file by name
   build
@@ -187,45 +167,22 @@
                    ;; Calculate totals
                    total-size (reduce + (map :size prompts))
                    total-chars (reduce + (map :chars prompts))
-                   total-tokens (reduce + (map :tokens prompts))
-
-                   ;; Prepare table data
-                   table-data (concat
-                               [{:name "PROMPT" :size "SIZE" :chars "CHARS" :tokens "TOKENS"}
-                                {:name "------" :size "----" :chars "-----" :tokens "------"}]
-                               (for [p prompts]
-                                 {:name (:name p)
-                                  :size (:size-str p)
-                                  :chars (format-number (:chars p))
-                                  :tokens (format-number (:tokens p))})
-                               [{:name "------" :size "----" :chars "-----" :tokens "------"}
-                                {:name "TOTAL"
-                                 :size (format-size total-size)
-                                 :chars (format-number total-chars)
-                                 :tokens (format-number total-tokens)}])
-
-                   ;; Calculate column widths
-                   col-widths {:name (apply max (map (fn [x] (count (:name x))) table-data))
-                               :size (apply max (map (fn [x] (count (:size x))) table-data))
-                               :chars (apply max (map (fn [x] (count (:chars x))) table-data))
-                               :tokens (apply max (map (fn [x] (count (:tokens x))) table-data))}
-
-                   ;; Format row
-                   format-row (fn [row]
-                                (str "  "
-                                     (format (str "%-" (:name col-widths) "s") (:name row))
-                                     "  "
-                                     (format (str "%" (:size col-widths) "s") (:size row))
-                                     "  "
-                                     (format (str "%" (:chars col-widths) "s") (:chars row))
-                                     "  "
-                                     (format (str "%" (:tokens col-widths) "s") (:tokens row))))]
+                   total-tokens (reduce + (map :tokens prompts))]
 
                (info-msg "Built Prompts")
 
                (println)
-               (doseq [row table-data]
-                 (println (format-row row)))
+               (table/print-table [:name :size :chars :tokens]
+                                  (concat
+                                   (for [p prompts]
+                                     {:name (:name p)
+                                      :size (:size-str p)
+                                      :chars (format-number (:chars p))
+                                      :tokens (format-number (:tokens p))})
+                                   [{:name "TOTAL"
+                                     :size (format-size total-size)
+                                     :chars (format-number total-chars)
+                                     :tokens (format-number total-tokens)}]))
 
                (println)
                (println (bling/bling [:dim "Note: Token count is estimated (~4 chars per token)"]))
@@ -361,41 +318,19 @@
 
                ;; Calculate totals
                total-size (reduce + (map (fn [s] (fs/size (str "skills/" (:path s)))) skills))
-               total-tokens (reduce + (map (fn [s] (long (estimate-tokens (slurp (str "skills/" (:path s)))))) skills))
-
-               ;; Prepare table data
-               table-data (concat
-                           [{:category "CATEGORY" :name "NAME" :path "PATH" :size "SIZE" :tokens "TOKENS"}
-                            {:category "--------" :name "----" :path "----" :size "----" :tokens "------"}]
-                           (sort-by (juxt :category :name) skills)
-                           [{:category "--------" :name "----" :path "----" :size "----" :tokens "------"}
-                            {:category "TOTAL" :name (str (count skills) " skills") :path "" :size (format-size total-size) :tokens (format-number total-tokens)}])
-
-               ;; Calculate column widths
-               col-widths {:category (apply max (map (fn [row] (count (:category row))) table-data))
-                           :name (apply max (map (fn [row] (count (:name row))) table-data))
-                           :path (apply max (map (fn [row] (count (:path row))) table-data))
-                           :size (apply max (map (fn [row] (count (:size row))) table-data))
-                           :tokens (apply max (map (fn [row] (count (:tokens row))) table-data))}
-
-               ;; Format row
-               format-row (fn [row]
-                            (str "  "
-                                 (format (str "%-" (:category col-widths) "s") (:category row))
-                                 "  "
-                                 (format (str "%-" (:name col-widths) "s") (:name row))
-                                 "  "
-                                 (format (str "%-" (:path col-widths) "s") (:path row))
-                                 "  "
-                                 (format (str "%" (:size col-widths) "s") (:size row))
-                                 "  "
-                                 (format (str "%" (:tokens col-widths) "s") (:tokens row))))]
+               total-tokens (reduce + (map (fn [s] (long (estimate-tokens (slurp (str "skills/" (:path s)))))) skills))]
 
            (info-msg "Available Skills")
 
            (println)
-           (doseq [row table-data]
-             (println (format-row row)))
+           (table/print-table [:category :name :path :size :tokens]
+                              (concat
+                               (sort-by (juxt :category :name) skills)
+                               [{:category "TOTAL"
+                                 :name (str (count skills) " skills")
+                                 :path ""
+                                 :size (format-size total-size)
+                                 :tokens (format-number total-tokens)}]))
 
            (println)
            (println (bling/bling [:dim "Note: Token count is estimated (~4 chars per token)"])))}
@@ -423,46 +358,6 @@
                             (shell "bb build-all"))
                           (catch Exception e
                             (error-msg (str "Build failed: " (.getMessage e))))))))))}
-
-  help
-  {:doc "Show detailed help for all tasks"
-   :task (do
-           (println)
-           (println (bling/bling [:bold :cyan "Clojure Skills - Task Runner"]))
-           (println)
-           (println "Usage: bb <task> [options]")
-           (println)
-           (println (bling/bling [:bold "Build Tasks:"]))
-           (println "  build <name>              Build a specific prompt")
-           (println "  build-all                 Build all prompts")
-           (println "  build-compressed <name>   Build and compress a prompt")
-           (println "  list-prompts              List built prompts with sizes")
-           (println "  clean                     Clean build artifacts")
-           (println)
-           (println (bling/bling [:bold "Development Tasks:"]))
-           (println "  test                      Run tests")
-           (println "  lint                      Lint code")
-           (println "  fmt                       Format code")
-           (println "  fmt-check                 Check formatting")
-           (println "  nrepl                     Start nREPL server")
-           (println "  watch [name]              Watch and rebuild on changes")
-           (println)
-           (println (bling/bling [:bold "Skills Management:"]))
-           (println "  list-skills               List all skills in table format")
-           (println "  compress-skill <path>     Compress a single skill")
-           (println)
-           (println (bling/bling [:bold "Quality Tasks:"]))
-           (println "  typos                     Check for typos")
-           (println "  typos-fix                 Fix typos automatically")
-           (println "  ci                        Run full CI pipeline")
-           (println)
-           (println (bling/bling [:bold "Other Tasks:"]))
-           (println "  outdated                  Check for outdated deps")
-           (println "  main [args]               Run main CLI")
-           (println "  setup-python              Install Python dependencies")
-           (println "  help                      Show this help message")
-           (println)
-           (println "Run 'bb tasks' to see all available tasks"))}
 
   ;; LLMLingua compression tasks
 
@@ -549,21 +444,4 @@
                (do
                  (println (:err result))
                  (error-msg "Compression failed")
-                 (System/exit 1)))))}
-
-  build-compressed
-  {:doc "Build and compress a prompt file\nUsage: bb build-compressed clojure_skill_builder --ratio 10"
-   :task (let [args *command-line-args*
-               name (first args)
-               ratio-idx (first (keep-indexed (fn [idx arg] (when (= "--ratio" arg) idx)) args))
-               ratio-arg (when ratio-idx (nth args (inc ratio-idx) nil))
-               ratio (if ratio-arg ratio-arg "10")]
-
-           (when-not name
-             (throw (ex-info "Usage: bb build-compressed <name> [--ratio N]" {})))
-
-           ;; Build first
-           (shell (str "bb build " name))
-
-           ;; Then compress
-           (shell (str "bb compress " name " --ratio " ratio)))}}}
+                 (System/exit 1)))))}}}

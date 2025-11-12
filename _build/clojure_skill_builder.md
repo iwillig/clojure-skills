@@ -1049,49 +1049,628 @@ Kaocha is a modern test runner that works with clojure.test, specs, and other te
     Now go create excellent Clojure Skills!
 
     ---
-    name: clojure_introduction
+    name: llm-agent-loop
     description: |
-      Introduction to Clojure fundamentals, immutability, and functional programming concepts. 
-      Use when learning Clojure basics, understanding core language features, data structures, 
-      functional programming, or when the user asks about Clojure introduction, getting started, 
-      language overview, immutability, REPL-driven development, or JVM functional programming.
+      Structured workflow for LLM coding agents working with Clojure codebases.
+      Use when developing code, debugging issues, implementing features, or
+      refactoring. Use when the user mentions coding tasks, agent behavior,
+      development workflow, REPL-driven development, or asks you to implement
+      features. Covers the gather-action-verify loop pattern for reliable
+      code changes.
     ---
 
-    # Clojure Introduction
+    # LLM Agent Loop
 
-    Clojure is a functional Lisp for the JVM combining immutable data
-    structures, first-class functions, and practical concurrency support.
+    A structured approach for how coding agents should behave when working with Clojure code.
 
-    ## Core Language Features
+    ## Quick Start
 
-    **Data Structures** (all immutable by default):
-    - `{}` - Maps (key-value pairs)
-    - `[]` - Vectors (indexed sequences)
-    - `#{}` - Sets (unique values)
-    - `'()` - Lists (linked lists)
+    Follow this pattern for every user task:
 
-    **Functions**: Defined with `defn`. Functions are first-class and
-    support variadic arguments, destructuring, and composition.
+Task → Gather Context → Take Action → Verify Output
 
-    **No OOP**: Use functions and data structures instead of
-    classes. Polymorphism via `multimethods` and `protocols`, not
-    inheritance.
 
-    ## How Immutability Works
+    **Example workflow:**
+    1. User asks: "Add a function to validate email addresses"
+    2. Gather: Read the file, understand the namespace structure
+    3. Action: Use `clojure_edit` to add the function
+    4. Verify: Use `clojure_eval` to test the new function
 
-    All data structures are immutable—operations return new copies rather
-    than modifying existing data. This enables:
+    ## Core Concepts
 
-    - Safe concurrent access without locks
-    - Easier testing and reasoning about code
-    - Efficient structural sharing (new versions don't copy everything)
+    ### The Agent Loop Pattern
 
-    **Pattern**: Use `assoc`, `conj`, `update`, etc. to create modified
-    versions of data.
+    Every task should follow this three-phase pattern:
 
+    **1. Gather Context**
+    - Understand what exists
+    - Clarify requirements
+    - Explore the codebase
+
+    **2. Take Action**
+    - Make focused changes
+    - Edit one thing at a time
+    - Use appropriate tools
+
+    **3. Verify Output**
+    - Test your changes
+    - Check for errors
+    - Confirm functionality
+
+    ### Why This Matters
+
+    Following this pattern ensures:
+    - **Reliability** - Catch errors before the user sees them
+    - **Transparency** - User sees your thought process
+    - **Quality** - Changes are tested and verified
+    - **Efficiency** - Fix issues immediately rather than after user feedback
+
+    ## Common Workflows
+
+    ### Workflow 1: Implementing a New Function
+
+    **Task**: User asks you to add a new function to an existing namespace.
+
+    **Gather Context:**
     ```clojure
-    (def person {:name "Alice" :age 30})
-    (assoc person :age 31)  ; Returns new map, original unchanged
+    ;; 1. Read the file to understand structure
+    ;; Use: clojure-mcp_read_file with path
+
+    ;; 2. Check if similar functions exist
+    ;; Look for patterns in existing code
+
+    ;; 3. Understand dependencies
+    ;; What libraries/namespaces are already required?
+
+    ;; 4. Clarify requirements with user if needed
+    "I see you want to add email validation. Should it accept nil values?"
+
+**Take Action:**
+
+``` clojure
+;; Use clojure_edit to add the function
+;; form_type: "defn"
+;; form_identifier: "validate-email"
+;; operation: "insert_after" (after similar function)
+;; content: The new function code
+```
+
+**Verify Output:**
+
+``` clojure
+;; 1. Reload the namespace
+(require 'myapp.core :reload)
+
+;; 2. Test the function
+(myapp.core/validate-email "test@example.com")
+;; => true
+
+(myapp.core/validate-email "invalid")
+;; => false
+
+;; 3. Test edge cases
+(myapp.core/validate-email nil)
+(myapp.core/validate-email "")
+```
+
+### Workflow 2: Fixing a Bug
+
+**Task**: User reports a function is returning incorrect results.
+
+**Gather Context:**
+
+``` clojure
+;; 1. Read the problematic function
+;; Use: clojure-mcp_read_file with collapsed view
+;; Use name_pattern to focus on specific function
+
+;; 2. Understand the bug
+;; Ask clarifying questions:
+"What input are you providing?"
+"What do you expect vs what do you get?"
+
+;; 3. Reproduce the issue
+(require 'myapp.core :reload)
+(myapp.core/problematic-fn input-that-fails)
+;; Observe the error or incorrect output
+```
+
+**Take Action:**
+
+``` clojure
+;; Fix using clojure_edit_replace_sexp for targeted changes
+;; match_form: The buggy expression
+;; new_form: The corrected expression
+
+;; Example: Fix off-by-one error
+;; match_form: "(< n 10)"
+;; new_form: "(<= n 10)"
+```
+
+**Verify Output:**
+
+``` clojure
+;; 1. Reload namespace
+(require 'myapp.core :reload)
+
+;; 2. Test the fix with original failing input
+(myapp.core/problematic-fn input-that-failed)
+;; => Now returns expected result
+
+;; 3. Test related cases to ensure no regression
+(myapp.core/problematic-fn edge-case-1)
+(myapp.core/problematic-fn edge-case-2)
+```
+
+### Workflow 3: Refactoring Code
+
+**Task**: User asks to refactor a function to be more idiomatic.
+
+**Gather Context:**
+
+``` clojure
+;; 1. Read the current implementation
+;; Use: clojure-mcp_read_file
+
+;; 2. Understand the function's purpose
+;; Read tests if they exist
+;; Check how it's used in the codebase
+
+;; 3. Identify what to improve
+;; Look for: imperative loops, nested ifs, repeated code
+```
+
+**Take Action:**
+
+``` clojure
+;; Use clojure_edit to replace the entire function
+;; form_type: "defn"
+;; form_identifier: "function-name"
+;; operation: "replace"
+;; content: Improved implementation
+```
+
+**Verify Output:**
+
+``` clojure
+;; 1. Reload namespace
+(require 'myapp.core :reload)
+
+;; 2. Test with same inputs as before
+;; Ensure behavior hasn't changed
+(= (old-result) (new-result))
+
+;; 3. Run any existing tests
+(require 'myapp.core-test :reload)
+(clojure.test/run-tests 'myapp.core-test)
+```
+
+### Workflow 4: Adding Dependencies
+
+**Task**: User needs functionality from a new library.
+
+**Gather Context:**
+
+``` clojure
+;; 1. Confirm the library and version
+"I'll add metosin/malli for schema validation. 
+ The latest version is 0.16.0. Does that work?"
+
+;; 2. Check current project structure
+;; Read deps.edn or project.clj
+;; Use: clojure-mcp_read_file
+
+;; 3. Verify library namespace structure
+;; Use clj-mcp.repl-tools to explore after adding
+```
+
+**Take Action:**
+
+``` clojure
+;; 1. Add to deps.edn (use file_edit or file_write)
+;; Add under :deps
+
+;; 2. Load the library
+(require '[clojure.repl.deps :refer [add-lib]])
+(add-lib 'metosin/malli {:mvn/version "0.16.0"})
+
+;; 3. Update namespace require
+;; Use clojure_edit to modify ns form
+```
+
+**Verify Output:**
+
+``` clojure
+;; 1. Confirm library loaded
+(require '[malli.core :as m])
+
+;; 2. Test basic usage
+(m/validate [:int] 42)
+;; => true
+
+;; 3. Document what was added
+"I've added malli and required it in your namespace as 'm'"
+```
+
+### Workflow 5: Debugging Errors
+
+**Task**: Code throws an exception.
+
+**Gather Context:**
+
+``` clojure
+;; 1. Read the error message carefully
+;; Identify: What function? What line? What type of error?
+
+;; 2. Reproduce the error
+(require 'myapp.core :reload)
+(myapp.core/failing-fn args)
+;; Capture the full stack trace
+
+;; 3. Examine the failing function
+;; Use: clojure-mcp_read_file with name_pattern
+```
+
+**Take Action:**
+
+``` clojure
+;; 1. Add defensive checks if needed
+;; Example: nil checks, type validation
+
+;; 2. Fix the root cause
+;; Use clojure_edit or clojure_edit_replace_sexp
+
+;; 3. Consider adding error messages
+;; Make failures informative
+```
+
+**Verify Output:**
+
+``` clojure
+;; 1. Reload and test
+(require 'myapp.core :reload)
+(myapp.core/failing-fn args)
+;; Should now work
+
+;; 2. Test edge cases that might cause similar errors
+(myapp.core/failing-fn nil)
+(myapp.core/failing-fn [])
+(myapp.core/failing-fn invalid-input)
+
+;; 3. Explain what was wrong and how you fixed it
+"The function was calling get-in on nil. I added a check 
+ to return nil early when the input is nil."
+```
+
+### Workflow 6: Exploring Unknown Code
+
+**Task**: User asks about code you haven't seen before.
+
+**Gather Context:**
+
+``` clojure
+;; 1. Start broad, then narrow
+;; Use: clojure-mcp_read_file with collapsed: true
+;; See all function signatures first
+
+;; 2. Identify key functions
+;; Look for public API functions (not marked private)
+;; Look at function names and arities
+
+;; 3. Read specific functions
+;; Use: name_pattern to expand just what you need
+
+;; 4. Check for tests
+;; Read test files to understand expected behavior
+```
+
+**Take Action:**
+
+``` clojure
+;; Use clj-mcp.repl-tools to explore interactively
+
+;; 1. List namespaces
+(clj-mcp.repl-tools/list-ns)
+
+;; 2. Explore main namespace
+(clj-mcp.repl-tools/list-vars 'myapp.core)
+
+;; 3. Get documentation
+(clj-mcp.repl-tools/doc-symbol 'myapp.core/main-fn)
+
+;; 4. See implementation
+(clj-mcp.repl-tools/source-symbol 'myapp.core/main-fn)
+```
+
+**Verify Output:**
+
+``` clojure
+;; Test your understanding
+
+;; 1. Load the namespace
+(require 'myapp.core)
+
+;; 2. Try example usage
+(myapp.core/main-fn example-input)
+
+;; 3. Summarize for user
+"This namespace provides data transformation utilities.
+ The main function is transform-data which takes a map
+ and applies validation, normalization, and enrichment."
+```
+
+## When to Use Each Approach
+
+### Reading Files
+
+**Use `clojure-mcp_read_file` when:** - Reading Clojure code (`.clj`,
+`.cljs`, `.cljc`) - You want collapsed view (function signatures only) -
+You need to see structure before details - Use `name_pattern` to expand
+specific functions - Use `content_pattern` to find functions containing
+specific code
+
+**Use `bash` with `cat` when:** - Reading non-Clojure files (`.edn`,
+`.txt`, `.md`) - You need exact file contents - Working with
+configuration files
+
+### Making Changes
+
+**Use `clojure_edit` when:** - Working with Clojure code -
+Editing/inserting/replacing top-level forms - Adding functions, updating
+namespace declarations - Most reliable for structural changes
+
+**Use `clojure_edit_replace_sexp` when:** - Making targeted
+expression-level changes - Replacing specific expressions within
+functions - Changing let bindings, function calls, literals
+
+**Use `file_edit` when:** - Editing non-Clojure files - Simple text
+replacements - Configuration file changes
+
+### Testing Changes
+
+**Always use `clojure_eval` after making changes:**
+
+``` clojure
+;; Pattern:
+;; 1. Reload namespace
+(require 'namespace :reload)
+
+;; 2. Test the change
+(namespace/function test-input)
+
+;; 3. Verify result
+;; Check return value, test edge cases
+```
+
+## Best Practices
+
+**DO:** - Always reload namespace with `:reload` before testing
+changes - Test with multiple inputs, including edge cases (nil, empty,
+invalid) - Show your work - explain what you're doing at each step - Ask
+clarifying questions when requirements are unclear - Read before
+writing - understand existing code first - Verify changes work before
+reporting success - Use collapsed view to scan files efficiently - Start
+with simple test cases, then try edge cases - Check for similar existing
+functions before adding new ones
+
+**DON'T:** - Make changes without reading the code first - Skip
+verification after making changes - Assume code works without testing
+it - Make multiple unrelated changes at once - Forget to reload
+namespace before testing - Ignore errors or exceptions - Write code
+without understanding the existing structure - Use generic variable
+names without checking project conventions
+
+## Common Issues
+
+### Issue: "Unable to Resolve Symbol" After Editing
+
+**Symptoms:**
+
+``` clojure
+(require 'myapp.core)
+(myapp.core/new-fn args)
+;; CompilerException: Unable to resolve symbol: new-fn
+```
+
+**Solution:**
+
+``` clojure
+;; You forgot to reload after editing
+(require 'myapp.core :reload)
+(myapp.core/new-fn args)
+;; Now works
+```
+
+**Prevention:** Always reload after editing files.
+
+### Issue: Changes Don't Seem to Take Effect
+
+**Symptoms:** - Edit a function - Test it - Still seeing old behavior
+
+**Solution:**
+
+``` clojure
+;; 1. Force reload
+(require 'myapp.core :reload-all)
+
+;; 2. Check you're testing the right function
+;; Did you edit the right namespace?
+
+;; 3. Verify your edit was saved
+;; Use clojure-mcp_read_file to check
+```
+
+### Issue: Tests Fail After Refactoring
+
+**Symptoms:** - Refactored code looks correct - Tests fail with
+unexpected results
+
+**Solution:**
+
+``` clojure
+;; 1. Reload test namespace too
+(require 'myapp.core-test :reload)
+
+;; 2. Run tests to see failures
+(clojure.test/run-tests 'myapp.core-test)
+
+;; 3. Debug failing tests
+;; Read test expectations
+;; Verify your refactor maintains same behavior
+```
+
+### Issue: Can't Find the Right Function
+
+**Symptoms:** - Large codebase - Don't know where functionality lives
+
+**Solution:**
+
+``` clojure
+;; 1. Search for keywords in code
+;; Use clojure-mcp_grep with pattern
+
+;; 2. List all namespaces
+(clj-mcp.repl-tools/list-ns)
+
+;; 3. Search for symbols
+(clj-mcp.repl-tools/find-symbols "email")
+
+;; 4. Read files in collapsed mode
+;; See all function signatures at once
+```
+
+## Working with the User
+
+### When to Ask for Help
+
+**Ask the user when:** - Requirements are ambiguous or unclear -
+Multiple valid approaches exist and you need to pick one - You encounter
+an error you can't resolve - Existing code behaves unexpectedly - You
+need to make a decision about architecture or design
+
+**Don't ask when:** - You can look up information in the codebase - You
+can test something in the REPL - Standard Clojure patterns apply - The
+task is straightforward
+
+### How to Show Errors
+
+**When you encounter an error:**
+
+1.  **Show the error:**
+
+``` clojure
+;; I tried to test the function:
+(myapp.core/process-data {:id 1})
+
+;; But got this error:
+;; NullPointerException at line 42
+;; in myapp.core/process-data
+```
+
+2.  **Explain what you think is wrong:**
+
+<!-- -->
+
+    It looks like the function expects :user-id but receives :id.
+    The error happens when it tries to call (.getId user) on nil.
+
+3.  **Propose a solution:**
+
+<!-- -->
+
+    I can fix this by:
+    1. Renaming the key from :id to :user-id, or
+    2. Adding a check for nil before calling .getId
+
+    Which approach would you prefer?
+
+### Communicating Progress
+
+**For multi-step tasks, use this pattern:**
+
+    Task: Add email validation to user registration
+
+    Step 1/4: Reading current registration code...
+    ✓ Found register-user function in src/myapp/users.clj
+
+    Step 2/4: Adding email validation function...
+    ✓ Added validate-email function with regex pattern
+
+    Step 3/4: Integrating validation into registration...
+    ✓ Updated register-user to validate email before creating user
+
+    Step 4/4: Testing the changes...
+    ✓ Valid email: works
+    ✓ Invalid email: throws clear error
+    ✓ Nil email: handled gracefully
+
+    Complete! Users can no longer register with invalid emails.
+
+## Summary
+
+Follow the **Gather → Action → Verify** loop for every task:
+
+1.  **Gather Context**
+    -   Read files with `clojure-mcp_read_file`
+    -   Explore with `clj-mcp.repl-tools`
+    -   Ask clarifying questions
+2.  **Take Action**
+    -   Edit with `clojure_edit` or `clojure_edit_replace_sexp`
+    -   Make focused, incremental changes
+    -   One thing at a time
+3.  **Verify Output**
+    -   Reload with `(require 'ns :reload)`
+    -   Test with `clojure_eval`
+    -   Check edge cases
+    -   Show results to user
+
+**Remember:** - Read before you write - Test after you edit -
+Communicate clearly - Ask when unsure - Fix errors immediately
+
+This pattern ensures reliable, high-quality code changes that work the
+first time.
+
+## Resources
+
+-   [Clojure REPL Skill](../language/clojure_repl.md) - Detailed REPL
+    workflow
+-   [Clojure Eval Skill](../clojure_mcp/clojure_eval.md) - Using
+    clojure_eval tool
+-   [Agent Guide](../../AGENTS.md) - Full agent development guide
+
+# Clojure Introduction
+
+Clojure is a functional Lisp for the JVM combining immutable data
+structures, first-class functions, and practical concurrency support.
+
+## Core Language Features
+
+**Data Structures** (all immutable by default): - `{}` - Maps (key-value
+pairs) - `[]` - Vectors (indexed sequences) - `#{}` - Sets (unique
+values) - `'()` - Lists (linked lists)
+
+**Functions**: Defined with `defn`. Functions are first-class and
+support variadic arguments, destructuring, and composition.
+
+**No OOP**: Use functions and data structures instead of classes.
+Polymorphism via `multimethods` and `protocols`, not inheritance.
+
+## How Immutability Works
+
+All data structures are immutable---operations return new copies rather
+than modifying existing data. This enables:
+
+-   Safe concurrent access without locks
+-   Easier testing and reasoning about code
+-   Efficient structural sharing (new versions don't copy everything)
+
+**Pattern**: Use `assoc`, `conj`, `update`, etc. to create modified
+versions of data.
+
+``` clojure
+(def person {:name "Alice" :age 30})
+(assoc person :age 31)  ; Returns new map, original unchanged
+```
 
 ## State Management
 
@@ -3365,3 +3944,1212 @@ Babashka makes Clojure practical for scripting:
 
 Use Babashka for shell scripts, build automation, CLI tools, and
 anywhere fast startup matters more than long-running performance.
+
+# μ/log (mulog)
+
+μ/log is a micro-logging library that logs events as data, not text
+messages. Designed for modern cloud-based distributed systems with
+centralized log aggregation.
+
+## Quick Start
+
+``` clojure
+;; Add dependency
+{:deps {com.brunobonacci/mulog {:mvn/version "0.9.0"}}}
+
+;; Require the namespace
+(require '[com.brunobonacci.mulog :as μ])
+
+;; Start a publisher (console for development)
+(def publisher (μ/start-publisher! {:type :console :pretty? true}))
+
+;; Log an event
+(μ/log ::user-logged 
+  :user-id "12345" 
+  :remote-ip "1.2.3.4" 
+  :auth-method :password-login)
+;; => nil
+
+;; Event logged:
+;; {:mulog/trace-id #mulog/flake "4VTF9QBbnef57vxVy-b4uKzh7dG7r7y4",
+;;  :mulog/timestamp 1587500402972,
+;;  :mulog/event-name :your-ns/user-logged,
+;;  :mulog/namespace "your-ns",
+;;  :user-id "12345",
+;;  :remote-ip "1.2.3.4",
+;;  :auth-method :password-login}
+
+;; Stop publisher when done
+(publisher)
+```
+
+**Key benefits:** - Extremely fast (under 300 nanoseconds per event) -
+Logs events as data structures, not strings - Memory-bound with no
+unbounded memory use - Asynchronous processing and rendering - Rich
+publisher ecosystem - Built-in distributed tracing support
+
+## Core Concepts
+
+### Events as Data
+
+μ/log treats logs as structured events with arbitrary key-value pairs:
+
+``` clojure
+;; Traditional logging (string-based)
+;; (log/info "User 12345 logged in from 1.2.3.4")
+
+;; μ/log (data-based)
+(μ/log ::user-logged :user-id "12345" :remote-ip "1.2.3.4")
+```
+
+**Why this matters:** - No need to parse strings later - Easy to query,
+filter, aggregate - Natural fit for tools like Elasticsearch - Rich
+dimensional data for analysis
+
+### Event Structure
+
+All events automatically include: - `:mulog/trace-id` - Unique event
+identifier (flake ID) - `:mulog/timestamp` - Millisecond-precision
+timestamp - `:mulog/event-name` - The event name (namespaced keyword) -
+`:mulog/namespace` - The namespace where event was logged
+
+Plus any custom key-value pairs you add.
+
+### Global Context
+
+Global context adds properties to ALL subsequent events:
+
+``` clojure
+;; Set once at application startup
+(μ/set-global-context! 
+  {:app-name "my-service"
+   :version "1.2.3"
+   :env "production"
+   :host "server-01"})
+
+;; Now all events include these properties
+(μ/log ::order-created :order-id "ord-123")
+;; Includes: :app-name, :version, :env, :host
+
+;; Update global context
+(μ/update-global-context! assoc :deploy-id "deploy-456")
+```
+
+**Best practice:** Set global context in your `-main` function with
+application-wide properties.
+
+### Local Context
+
+Local context is thread-local and scoped to a block:
+
+``` clojure
+;; Context applies to all logs in scope
+(μ/with-context {:request-id "req-789" :user-id "user-456"}
+  (μ/log ::api-call :endpoint "/api/orders" :method "POST")
+  (process-order)
+  (μ/log ::api-response :status 200))
+
+;; Both events include :request-id and :user-id
+
+;; Context nests
+(μ/with-context {:transaction-id "tx-098765"}
+  (μ/with-context {:order-id "ord-123"}
+    (μ/log ::item-processed :item-id "sku-456" :quantity 2)))
+;; Event includes both :transaction-id and :order-id
+```
+
+Local context propagates through function calls in the same thread.
+
+### Distributed Tracing with μ/trace
+
+μ/trace automatically tracks operation duration and outcome:
+
+``` clojure
+;; Wrap operations to track duration and errors
+(μ/trace ::database-query
+  [:table "orders" :query-type "select"]
+  (db/fetch-orders))
+
+;; Automatically logs:
+;; {:mulog/trace-id #mulog/flake "...",
+;;  :mulog/event-name ::database-query,
+;;  :mulog/timestamp 1587504242983,
+;;  :mulog/duration 254402837,  ; nanoseconds
+;;  :mulog/outcome :ok,          ; or :error
+;;  :mulog/root-trace #mulog/flake "...",
+;;  :mulog/parent-trace #mulog/flake "...",
+;;  :table "orders",
+;;  :query-type "select"}
+```
+
+**μ/trace features:** - Measures duration in nanoseconds - Tracks
+`:outcome` (`:ok` or `:error`) - Links parent/child traces - Adds
+exception details on errors - Supports result capture
+
+## Common Workflows
+
+### Workflow 1: Application Initialization
+
+Set up μ/log at application startup:
+
+``` clojure
+(ns my-app.core
+  (:require [com.brunobonacci.mulog :as μ]))
+
+(defn -main [& args]
+  ;; Set global context first
+  (μ/set-global-context!
+    {:app-name "my-service"
+     :version (System/getProperty "app.version" "dev")
+     :env (System/getenv "ENV")
+     :host (.getHostName (java.net.InetAddress/getLocalHost))
+     :pid (.pid (java.lang.ProcessHandle/current))})
+  
+  ;; Start publisher(s)
+  (def publisher
+    (μ/start-publisher!
+      {:type :console :pretty? true}))
+  
+  ;; Log startup event
+  (μ/log ::application-started :init-time 250)
+  
+  ;; Application logic
+  (start-server)
+  
+  ;; Shutdown hook
+  (.addShutdownHook
+    (Runtime/getRuntime)
+    (Thread. (fn []
+               (μ/log ::application-stopping)
+               (publisher)))))
+```
+
+### Workflow 2: HTTP Request Logging
+
+Track requests with contextual information:
+
+``` clojure
+(require '[com.brunobonacci.mulog :as μ])
+
+(defn wrap-logging [handler]
+  (fn [request]
+    (let [request-id (or (get-in request [:headers "x-request-id"])
+                         (str (java.util.UUID/randomUUID)))]
+      (μ/with-context
+        {:request-id request-id
+         :user-id (get-in request [:session :user-id])
+         :remote-ip (:remote-addr request)}
+        
+        (μ/log ::http-request-start
+          :method (:request-method request)
+          :path (:uri request))
+        
+        (let [start (System/nanoTime)
+              response (handler request)
+              duration (- (System/nanoTime) start)]
+          
+          (μ/log ::http-request-complete
+            :method (:request-method request)
+            :path (:uri request)
+            :status (:status response)
+            :duration-ms (/ duration 1000000.0))
+          
+          response)))))
+
+;; Or use μ/trace for automatic timing
+(defn wrap-logging-trace [handler]
+  (fn [request]
+    (μ/with-context
+      {:request-id (or (get-in request [:headers "x-request-id"])
+                       (str (java.util.UUID/randomUUID)))
+       :user-id (get-in request [:session :user-id])}
+      
+      (μ/trace ::http-request
+        [:method (:request-method request)
+         :path (:uri request)]
+        (handler request)))))
+```
+
+### Workflow 3: Database Operation Tracing
+
+Track database operations with automatic timing:
+
+``` clojure
+(require '[com.brunobonacci.mulog :as μ]
+         '[next.jdbc :as jdbc])
+
+(defn fetch-user [db user-id]
+  (μ/trace ::database-query
+    [:table "users"
+     :operation "select"
+     :user-id user-id]
+    (jdbc/execute-one! db ["SELECT * FROM users WHERE id = ?" user-id])))
+
+(defn create-order [db order-data]
+  (μ/trace ::database-insert
+    [:table "orders"
+     :operation "insert"]
+    (jdbc/execute-one! db
+      ["INSERT INTO orders (user_id, total) VALUES (?, ?)"
+       (:user-id order-data)
+       (:total order-data)]
+      {:return-keys true})))
+
+;; With error handling
+(defn safe-db-operation [db f]
+  (try
+    (μ/trace ::database-operation
+      []
+      (f db))
+    (catch Exception e
+      (μ/log ::database-error
+        :exception e
+        :error-type (class e)
+        :message (.getMessage e))
+      (throw e))))
+```
+
+### Workflow 4: Capturing Results from Traces
+
+Capture specific fields from operation results:
+
+``` clojure
+;; Capture HTTP response status
+(μ/trace ::http-call
+  {:pairs [:url "https://api.example.com/users"]
+   :capture (fn [response]
+              {:http-status (:status response)
+               :content-length (get-in response [:headers "content-length"])})}
+  (http/get "https://api.example.com/users"))
+
+;; Result includes :http-status and :content-length
+
+;; Capture database query results
+(μ/trace ::user-search
+  {:pairs [:search-term "alice"]
+   :capture (fn [results]
+              {:result-count (count results)
+               :has-results (pos? (count results))})}
+  (db/search-users "alice"))
+```
+
+### Workflow 5: Nested Distributed Traces
+
+Track operations across multiple service layers:
+
+``` clojure
+(defn process-order [order-data]
+  (μ/trace ::process-order
+    [:order-id (:order-id order-data)]
+    
+    ;; Nested trace: validate
+    (μ/trace ::validate-order
+      []
+      (validate-order-data order-data))
+    
+    ;; Nested trace: check inventory
+    (μ/trace ::check-inventory
+      [:items (count (:items order-data))]
+      (check-item-availability (:items order-data)))
+    
+    ;; Nested trace: payment
+    (μ/trace ::process-payment
+      [:amount (:total order-data)]
+      (charge-payment (:payment order-data)))
+    
+    ;; Final result
+    {:status :success :order-id (:order-id order-data)}))
+
+;; Produces trace hierarchy:
+;; ::process-order (parent)
+;;   └── ::validate-order (child, shares parent-trace)
+;;   └── ::check-inventory (child, shares parent-trace)
+;;   └── ::process-payment (child, shares parent-trace)
+```
+
+### Workflow 6: Using Multiple Publishers
+
+Send events to multiple destinations:
+
+``` clojure
+;; Multiple publishers via :multi type
+(def publishers
+  (μ/start-publisher!
+    {:type :multi
+     :publishers
+     [{:type :console :pretty? true}
+      {:type :simple-file :filename "/var/log/app/events.log"}
+      {:type :elasticsearch
+       :url "http://localhost:9200"
+       :index-pattern "mulog-YYYY.MM.dd"}]}))
+
+;; Or start separately
+(def console-pub (μ/start-publisher! {:type :console}))
+(def file-pub (μ/start-publisher! {:type :simple-file :filename "/tmp/events.log"}))
+
+;; Stop all
+(publishers) ; for multi
+;; or
+(console-pub)
+(file-pub)
+```
+
+### Workflow 7: Error and Exception Logging
+
+Properly log errors with context:
+
+``` clojure
+;; Basic error logging
+(try
+  (risky-operation)
+  (catch Exception e
+    (μ/log ::operation-failed
+      :exception e
+      :operation "risky-operation"
+      :reason (.getMessage e))))
+
+;; With μ/trace (automatic exception capture)
+(μ/trace ::risky-operation
+  [:operation-type "data-import"]
+  (import-data source))
+;; On exception:
+;; - :mulog/outcome :error
+;; - :exception <exception object>
+;; - Original exception is re-thrown
+
+;; Defensive logging before throwing
+(defn validate-input [input]
+  (when-not (valid? input)
+    (μ/log ::validation-failed
+      :input input
+      :reason "invalid format")
+    (throw (ex-info "Invalid input" {:input input}))))
+```
+
+## Publishers
+
+μ/log supports many publishers for different backends:
+
+**Development:** - `:console` - Print to stdout (development only) -
+`:simple-file` - Write to file in EDN format
+
+**Production:** - `:elasticsearch` - Send to Elasticsearch - `:kafka` -
+Send to Kafka topics - `:kinesis` - Send to AWS Kinesis -
+`:cloudwatch` - Send to AWS CloudWatch Logs - `:zipkin` - Send traces to
+Zipkin - `:prometheus` - Expose metrics endpoint - `:slack` - Send
+alerts to Slack - `:opentelemetry` - Send to OpenTelemetry collector
+
+**Example configurations:**
+
+``` clojure
+;; Console (development)
+{:type :console :pretty? true}
+
+;; Elasticsearch
+{:type :elasticsearch
+ :url "http://localhost:9200"
+ :index-pattern "mulog-YYYY.MM.dd"}
+
+;; Kafka
+{:type :kafka
+ :kafka {:bootstrap.servers "localhost:9092"}
+ :topic "mulog-events"}
+
+;; CloudWatch
+{:type :cloudwatch
+ :log-group-name "/aws/lambda/my-function"
+ :log-stream-name "2024/11/11/my-stream"}
+
+;; Multi-publisher
+{:type :multi
+ :publishers
+ [{:type :console}
+  {:type :elasticsearch :url "http://es:9200"}]}
+```
+
+## When to Use Each Approach
+
+**Use μ/log when:** - Logging discrete events (user actions, API calls,
+errors) - You need rich contextual data - Events happen at a single
+point in time - You want to query and aggregate logs
+
+**Use μ/trace when:** - Tracking operation duration - Need automatic
+error tracking - Building distributed traces - Want to measure
+performance - Operations span time (database calls, HTTP requests)
+
+**Use with-context when:** - You have request-scoped data (request ID,
+user ID) - Processing spans multiple function calls - Need consistent
+context across operations - Context applies to a logical unit of work
+
+**Use set-global-context! when:** - Application-wide properties (app
+name, version, environment) - Properties valid for entire process
+lifetime - Information needed in every single event
+
+## Best Practices
+
+**DO:** - Use namespaced keywords for event names
+(`:my-ns/user-logged`) - Log plain values, not opaque objects - Set
+global context at application startup - Use `:exception` key for
+exception objects - Add dimensional data (IDs, status codes, etc.) - Use
+μ/trace for operations with duration - Track outcomes
+(`:status :success`, `:status :failed`) - Log timestamps with
+millisecond precision (automatic) - Use publishers appropriate for
+environment (console for dev, Elasticsearch for prod)
+
+**DON'T:** - Log deeply nested maps (hard to query) - Log mutable
+objects (async rendering may see different state) - Construct log
+messages as strings - Skip global context setup - Use println or other
+text logging - Log passwords or sensitive data - Create unbounded log
+volume
+
+## Common Issues
+
+### Issue: Events Not Appearing
+
+**Problem:** Logged events but nothing appears.
+
+``` clojure
+(μ/log ::my-event :data "value")
+;; Nothing shows up
+```
+
+**Solution:** Start a publisher first.
+
+``` clojure
+;; Start publisher BEFORE logging
+(def publisher (μ/start-publisher! {:type :console}))
+
+(μ/log ::my-event :data "value")
+;; Now it appears
+```
+
+### Issue: Events Missing Context
+
+**Problem:** Expected context properties don't appear in events.
+
+``` clojure
+(μ/set-global-context! {:app-name "my-app"})
+(μ/log ::test)
+;; :app-name not in event
+```
+
+**Solution:** Global context only applies to events logged AFTER it's
+set.
+
+``` clojure
+;; Set context FIRST
+(μ/set-global-context! {:app-name "my-app"})
+
+;; Then log
+(μ/log ::test)
+;; Now includes :app-name
+```
+
+### Issue: Local Context Not Propagating
+
+**Problem:** Context doesn't appear in nested function calls.
+
+``` clojure
+(defn inner-fn []
+  (μ/log ::inner-event))
+
+(μ/with-context {:request-id "123"}
+  (inner-fn))
+;; :request-id missing from ::inner-event
+```
+
+**Solution:** Local context only propagates in the same thread. If you
+spawn threads, you need to explicitly transfer context.
+
+``` clojure
+;; Works (same thread)
+(defn inner-fn []
+  (μ/log ::inner-event))
+
+(μ/with-context {:request-id "123"}
+  (inner-fn))
+;; :request-id appears
+
+;; For new threads, capture and restore context
+(let [ctx (μ/local-context)]
+  (future
+    (μ/with-context ctx
+      (μ/log ::async-event))))
+```
+
+### Issue: Performance Impact
+
+**Problem:** Logging too many events impacts performance.
+
+**Solution:** μ/log is designed to be fast (under 300ns per event), but:
+
+``` clojure
+;; DON'T log in tight loops
+(doseq [item (range 1000000)]
+  (μ/log ::processing :item item)) ; Bad!
+
+;; DO log summary events
+(μ/log ::processing-started :count 1000000)
+(doseq [item (range 1000000)]
+  (process item))
+(μ/log ::processing-complete :count 1000000 :duration-ms elapsed)
+
+;; Or sample events
+(doseq [item (range 1000000)]
+  (when (zero? (mod item 10000))
+    (μ/log ::processing-checkpoint :item item)))
+```
+
+### Issue: Trace Duration in Wrong Units
+
+**Problem:** Duration values look wrong.
+
+``` clojure
+(μ/trace ::operation [] (do-work))
+;; :mulog/duration 254402837
+;; What unit is this?
+```
+
+**Solution:** Duration is always in **nanoseconds**. Convert to
+milliseconds:
+
+``` clojure
+;; In your query/visualization layer
+(/ duration 1000000.0) ; nanoseconds to milliseconds
+(/ duration 1000000000.0) ; nanoseconds to seconds
+```
+
+## Advanced Topics
+
+### Custom Publishers
+
+Create custom publishers for specific needs:
+
+``` clojure
+(defn custom-publisher [{:keys [config]}]
+  (let [running (atom true)]
+    {:publisher-fn
+     (fn [events]
+       (doseq [event events]
+         (my-custom-handler event)))
+     
+     :stop-fn
+     (fn []
+       (reset! running false))}))
+
+;; Register and use
+(μ/start-publisher! {:type :custom :publisher custom-publisher})
+```
+
+See [custom publishers
+documentation](https://github.com/BrunoBonacci/mulog#custom-publishers)
+for details.
+
+### Sampling and Filtering
+
+Filter events before publishing:
+
+``` clojure
+;; Only log errors
+(defn error-filter [events]
+  (filter #(= :error (:mulog/outcome %)) events))
+
+;; Sample 10% of events
+(defn sample-filter [events]
+  (filter #(< (rand) 0.1) events))
+```
+
+## Resources
+
+-   [GitHub Repository](https://github.com/BrunoBonacci/mulog)
+-   [API Documentation](https://cljdoc.org/d/com.brunobonacci/mulog)
+-   [Publisher
+    Documentation](https://github.com/BrunoBonacci/mulog/tree/master/doc/publishers)
+-   [Talk: μ/log and the Next 100 Logging
+    Systems](https://www.youtube.com/watch?v=P1149dWnl3k)
+
+## Summary
+
+μ/log revolutionizes logging by treating logs as structured events
+rather than text messages. Key points:
+
+1.  **Events as data** - Log structured events with arbitrary key-value
+    pairs
+2.  **Fast and async** - Under 300ns per event, non-blocking
+3.  **Rich context** - Global and local context for dimensional data
+4.  **Distributed tracing** - Built-in μ/trace for tracking operations
+5.  **Publisher ecosystem** - Send events to Elasticsearch, Kafka,
+    CloudWatch, and more
+6.  **Memory safe** - Bounded memory usage, drops events before crashing
+
+Start with console publisher for development, then use Elasticsearch or
+similar for production. Always set global context at startup and use
+local context for request-scoped data.
+
+# clj-commons/pretty
+
+Library for formatted output with ANSI colors, pretty exceptions, binary
+dumps, tables, and code annotations.
+
+## Quick Start
+
+Pretty provides several independent formatting capabilities. Each can be
+used standalone:
+
+``` clojure
+(require '[clj-commons.ansi :as ansi]
+         '[clj-commons.format.exceptions :as exceptions]
+         '[clj-commons.format.binary :as binary]
+         '[clj-commons.format.table :as table])
+
+;; Colored output
+(ansi/pout [:bold.red "ERROR:"] " Something went wrong")
+
+;; Pretty exceptions
+(try
+  (throw (ex-info "Failed" {:user-id 123}))
+  (catch Exception e
+    (exceptions/print-exception e)))
+
+;; Binary dumps
+(binary/print-binary (.getBytes "Hello"))
+
+;; Tables
+(table/print-table [:id :name] [{:id 1 :name "Alice"}])
+```
+
+## Core Concepts
+
+### ANSI Color Support
+
+Pretty automatically detects if color output is appropriate: - Enabled
+in REPLs (nREPL, Cursive, `clj`) - Disabled if `NO_COLOR` environment
+variable is set - Can be controlled via `clj-commons.ansi.enabled`
+system property
+
+### Composed Strings
+
+Most Pretty functions work with "composed strings" - Hiccup-like data
+structures that include formatting:
+
+``` clojure
+[:red "error"]                          ; Simple colored text
+[:bold.yellow "Warning"]                ; Multiple font characteristics
+[:red "Error: " [:bold "critical"]]     ; Nested formatting
+```
+
+## Common Workflows
+
+### Workflow 1: Colored Console Output
+
+Use `ansi/compose` to build formatted strings, `ansi/pout` and
+`ansi/perr` to print them:
+
+``` clojure
+(require '[clj-commons.ansi :as ansi])
+
+;; Print to stdout
+(ansi/pout [:green.bold "✓"] " Tests passed")
+
+;; Print to stderr
+(ansi/perr [:red.bold "✗"] " Tests failed")
+
+;; Build without printing
+(def message (ansi/compose [:yellow "Warning: " [:bold "check input"]]))
+```
+
+**Font characteristics** (combine with periods): - Colors: `red`,
+`green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `black` - Bright
+colors: `bright-red`, `bright-green`, etc. - Background: `red-bg`,
+`green-bg`, `bright-blue-bg`, etc. - Styles: `bold`, `faint`, `italic`,
+`underlined`, `inverse`, `crossed` - Extended colors: `color-500` (RGB
+5,0,0), `grey-0` through `grey-23`
+
+``` clojure
+;; Complex formatting
+(ansi/pout [:bold.bright-white.red-bg "CRITICAL"] 
+           [:red " System overload at " 
+            [:bold.yellow (java.time.LocalDateTime/now)]])
+```
+
+### Workflow 2: Pretty Exception Formatting
+
+Format exceptions with readable stack traces, property display, and
+duplicate frame detection:
+
+``` clojure
+(require '[clj-commons.format.exceptions :as exceptions])
+
+;; Basic exception formatting
+(try
+  (/ 1 0)
+  (catch Exception e
+    (exceptions/print-exception e)))
+
+;; Format with options
+(try
+  (throw (ex-info "Database error" 
+                  {:query "SELECT * FROM users"
+                   :connection-id 42}))
+  (catch Exception e
+    (exceptions/print-exception e
+      {:frame-limit 10        ; Limit stack frames shown
+       :properties true       ; Show exception properties (default)
+       :traditional false}))) ; Modern ordering (default)
+```
+
+**Key features:** - Stack frames in chronological order (shallow to
+deep) - Clojure function names demangled - File names and line numbers
+highlighted - Exception properties pretty-printed - Repeated frames
+collapsed
+
+**Customizing frame filtering:**
+
+``` clojure
+;; Set application namespaces for highlighting
+(alter-var-root #'exceptions/*app-frame-names*
+                (constantly #{"myapp" "mycompany"}))
+
+;; Define custom frame filter
+(defn my-filter [frame]
+  (cond
+    (re-find #"test" (:name frame)) :hide
+    (= "clojure.core" (:package frame)) :omit
+    :else :show))
+
+(exceptions/print-exception e {:filter my-filter})
+```
+
+### Workflow 3: Binary Data Visualization
+
+Display byte sequences with color-coded hex dumps and optional ASCII
+view:
+
+``` clojure
+(require '[clj-commons.format.binary :as binary])
+
+;; Basic hex dump
+(def data (.getBytes "Choose immutability"))
+(binary/print-binary data)
+; 0000: 43 68 6F 6F 73 65 20 69 6D 6D 75 74 61 62 69 6C
+; 0010: 69 74 79
+
+;; With ASCII sidebar (16 bytes per line)
+(binary/print-binary data {:ascii true})
+; 0000: 43 68 6F 6F 73 65 20 69 6D 6D 75 74 61 62 69 6C │Choose immutabil│
+; 0010: 69 74 79                                        │ity             │
+
+;; Custom line width (default 32, or 16 with :ascii)
+(binary/print-binary data {:line-bytes 8})
+
+;; Compare two byte sequences
+(def expected (.getBytes "Hello World"))
+(def actual (.getBytes "Hello Clojure"))
+(binary/print-binary-delta expected actual)
+; Differences highlighted in green (expected) and red (actual)
+```
+
+**Byte color coding:** - ASCII printable: cyan - Whitespace: green -
+Control characters: red - Extended ASCII: yellow
+
+### Workflow 4: Table Formatting
+
+Print data as formatted tables with borders, alignment, and custom
+styling:
+
+``` clojure
+(require '[clj-commons.format.table :as table])
+
+(def users
+  [{:id 1 :name "Alice" :role :admin}
+   {:id 2 :name "Bob" :role :user}
+   {:id 3 :name "Charlie" :role :user}])
+
+;; Simple table
+(table/print-table [:id :name :role] users)
+; ┌──┬───────┬─────┐
+; │Id│  Name │Role │
+; ├──┼───────┼─────┤
+; │ 1│  Alice│:admin│
+; │ 2│    Bob│:user │
+; │ 3│Charlie│:user │
+; └──┴───────┴─────┘
+
+;; Custom column configuration
+(table/print-table
+  [{:key :id :title "ID" :align :right}
+   {:key :name :title "User Name" :width 15}
+   {:key :role 
+    :title "Role"
+    :formatter #(if (= :admin %) "Administrator" "User")
+    :decorator (fn [idx val] (when (= :admin val) :bold.green))}]
+  users)
+
+;; Different table styles
+(table/print-table
+  {:columns [:id :name :role]
+   :style table/skinny-style}
+  users)
+; ID | Name    | Role
+; ---+---------+------
+;  1 | Alice   | :admin
+;  2 | Bob     | :user
+;  3 | Charlie | :user
+
+(table/print-table
+  {:columns [:id :name :role]
+   :style table/minimal-style}
+  users)
+; ID  Name     Role
+;  1  Alice    :admin
+;  2  Bob      :user
+;  3  Charlie  :user
+```
+
+**Column options:** - `:key` - Keyword or function to extract value
+(required) - `:title` - Column header (defaults to capitalized key) -
+`:width` - Fixed width or auto-calculated - `:align` - `:left`, `:right`
+(default), or `:center` - `:title-align` - Alignment for title (default
+`:center`) - `:formatter` - Function to format cell value -
+`:decorator` - Function returning font declaration for cell
+
+**Table options:** - `:columns` - Vector of columns - `:style` -
+`default-style`, `skinny-style`, or `minimal-style` - `:row-decorator` -
+Function to style entire rows - `:row-annotator` - Function to add notes
+after rows
+
+### Workflow 5: Code Annotations
+
+Annotate source code with error markers and messages:
+
+``` clojure
+(require '[clj-commons.pretty.annotations :as ann]
+         '[clj-commons.ansi :as ansi])
+
+;; Annotate a single line
+(def source "SELECT DATE, AMT FROM PAYMENTS")
+(ansi/perr source)
+(run! ansi/perr
+  (ann/callouts [{:offset 7 
+                  :length 4 
+                  :message "Invalid column name"}]))
+; SELECT DATE, AMT FROM PAYMENTS
+;        ▲▲▲▲
+;        │
+;        └╴ Invalid column name
+
+;; Multiple annotations on one line
+(run! ansi/perr
+  (ann/callouts [{:offset 7 :length 4 :message "Invalid column"}
+                 {:offset 17 :length 8 :message "Unknown table"}]))
+; SELECT DATE, AMT FROM PAYMENTS
+;        ▲▲▲▲         ▲▲▲▲▲▲▲▲
+;        │            │
+;        │            └╴ Unknown table
+;        └╴ Invalid column
+
+;; Annotate multiple lines
+(def lines
+  [{:line "SELECT DATE, AMT"
+    :annotations [{:offset 7 :length 4 :message "Invalid column"}]}
+   {:line "FROM PAYMENTS WHERE AMT > 10000"
+    :annotations [{:offset 13 :length 5 :message "Unknown keyword"}]}])
+
+(run! ansi/perr (ann/annotate-lines lines))
+; 1: SELECT DATE, AMT
+;           ▲▲▲▲
+;           │
+;           └╴ Invalid column
+; 2: FROM PAYMENTS WHERE AMT > 10000
+;                  ▲▲▲▲▲
+;                  │
+;                  └╴ Unknown keyword
+
+;; Custom styling
+(run! ansi/perr
+  (ann/callouts 
+    {:font :red.bold
+     :marker "^"
+     :spacing :minimal}
+    [{:offset 7 :length 4 :message "Error here"}]))
+```
+
+**Annotation options:** - `:offset` - Column position (0-based,
+required) - `:length` - Characters to mark (default 1) - `:message` -
+Error message (composed string) - `:font` - Override style font for this
+annotation - `:marker` - Override marker character(s)
+
+**Style options:** - `:font` - Default font (default `:yellow`) -
+`:spacing` - `:tall`, `:compact` (default), or `:minimal` - `:marker` -
+Marker string or function (default "▲") - `:bar` - Vertical bar
+character (default "│") - `:nib` - Connection before message (default
+"└╴")
+
+### Workflow 6: Enable Pretty Exceptions in REPL
+
+Install pretty exception printing for your development environment:
+
+``` clojure
+;; In user.clj or at REPL startup
+(require '[clj-commons.pretty.repl :as pretty-repl])
+(pretty-repl/install-pretty-exceptions)
+
+;; Now all REPL exceptions use pretty formatting
+(/ 1 0)
+; Pretty formatted ArithmeticException output
+```
+
+**Project integration:**
+
+For Leiningen (`~/.lein/profiles.d/debug.clj`):
+
+``` clojure
+{:dependencies [[org.clj-commons/pretty "3.6.7"]]
+ :injections [(require '[clj-commons.pretty.repl :as repl])
+              (repl/install-pretty-exceptions)]}
+```
+
+For deps.edn (`:debug` alias):
+
+``` clojure
+{:aliases
+ {:debug
+  {:extra-deps {org.clj-commons/pretty {:mvn/version "3.6.7"}}
+   :exec-fn clj-commons.pretty.repl/main}}}
+```
+
+For nREPL middleware:
+
+``` clojure
+;; Add to .nrepl.edn or nrepl config
+{:middleware [clj-commons.pretty.nrepl/wrap-pretty]}
+```
+
+## When to Use Each Feature
+
+**Use ANSI colors when:** - Creating CLI tools with colored output -
+Highlighting important information in logs - Building developer tools
+and REPLs - Formatting success/error/warning messages
+
+**Use exception formatting when:** - Debugging complex stack traces -
+Building error reporting tools - Creating developer-friendly error
+messages - Need to understand nested exceptions
+
+**Use binary formatting when:** - Debugging binary protocols - Comparing
+byte sequences - Analyzing file formats - Inspecting serialized data
+
+**Use table formatting when:** - Displaying query results - Showing
+configuration data - Comparing multiple items - Creating CLI reports
+
+**Use code annotations when:** - Building error reporters for parsers -
+Highlighting syntax errors - Creating educational tools - Showing code
+issues in tooling
+
+## Best Practices
+
+**Do:** - Check if color is enabled before complex formatting:
+`(ansi/when-color-enabled ...)` - Use composed strings for flexibility -
+Set `*app-frame-names*` to highlight your code in stack traces - Provide
+custom exception dispatch for complex types - Use appropriate table
+styles for your use case - Keep annotation messages concise (no line
+breaks)
+
+**Don't:** - Generate ANSI codes manually - use `compose` - Mix Pretty's
+exception formatting with manual `.printStackTrace` - Forget that
+composed strings need `compose` to become actual strings - Create deeply
+nested font definitions - keep formatting simple - Use `:ascii` mode for
+binary output wider than 16 bytes per line - Overlap annotation ranges
+on the same line
+
+## Common Issues
+
+### "ANSI codes appear in output"
+
+Colors disabled but codes still showing:
+
+``` clojure
+;; Check if colors are enabled
+ansi/*color-enabled*  ; => false
+
+;; Colors are explicitly disabled
+;; Either: NO_COLOR env var is set
+;; Or: clj-commons.ansi.enabled system property is "false"
+;; Or: No console/REPL detected
+
+;; Force enable (for testing)
+(alter-var-root #'ansi/*color-enabled* (constantly true))
+```
+
+### "Stack trace still looks like Java output"
+
+Pretty exceptions not installed:
+
+``` clojure
+;; Install pretty exceptions
+(require '[clj-commons.pretty.repl :as pretty-repl])
+(pretty-repl/install-pretty-exceptions)
+
+;; Or check if already installed
+(pretty-repl/install-pretty-exceptions)  ; Safe to call multiple times
+```
+
+### "Binary output shows wrong width"
+
+Line width calculation doesn't account for tabs/ANSI codes:
+
+``` clojure
+;; Specify explicit line width
+(binary/print-binary data {:line-bytes 16})
+
+;; For ASCII mode, always use 16 bytes per line
+(binary/print-binary data {:ascii true :line-bytes 16})
+```
+
+### "Table columns too wide/narrow"
+
+Width auto-calculated from data:
+
+``` clojure
+;; Specify explicit width
+(table/print-table
+  [{:key :name :width 20}
+   {:key :description :width 50}]
+  data)
+
+;; Or use formatters to control content
+(table/print-table
+  [{:key :name}
+   {:key :description
+    :formatter #(subs % 0 (min 50 (count %)))}]
+  data)
+```
+
+### "Annotations overlap"
+
+Multiple annotations with overlapping ranges:
+
+``` clojure
+;; Bad: overlapping ranges
+[{:offset 5 :length 10}
+ {:offset 8 :length 5}]  ; Overlaps with first
+
+;; Good: non-overlapping
+[{:offset 5 :length 3}
+ {:offset 10 :length 5}]
+
+;; Annotations automatically sorted by offset
+;; But overlaps still cause visual issues
+```
+
+## Advanced Topics
+
+### Custom Exception Dispatch
+
+Control how specific types appear in exception output:
+
+``` clojure
+(import 'com.stuartsierra.component.SystemMap)
+
+(defmethod exceptions/exception-dispatch SystemMap 
+  [system-map]
+  (print "#<SystemMap>"))
+
+;; Now SystemMap instances show as "#<SystemMap>" instead of full structure
+```
+
+### Custom Table Decorators
+
+Add visual styling to table rows and cells:
+
+``` clojure
+(table/print-table
+  {:columns [:status :message]
+   :row-decorator (fn [idx row]
+                    (case (:status row)
+                      :error :red
+                      :warning :yellow
+                      :success :green
+                      nil))}
+  [{:status :error :message "Failed"}
+   {:status :success :message "OK"}])
+```
+
+### Custom Annotation Markers
+
+Create custom marker functions:
+
+``` clojure
+(defn wave-marker [length]
+  (apply str (repeat length "~")))
+
+(run! ansi/perr
+  (ann/callouts 
+    {:marker wave-marker}
+    [{:offset 5 :length 10 :message "Issue here"}]))
+; Some text here with a problem
+;      ~~~~~~~~~~
+;      │
+;      └╴ Issue here
+```
+
+### Parsing Exception Text
+
+Convert text-based exception output back to Pretty's format:
+
+``` clojure
+;; Useful for processing exception logs
+(def exception-text 
+  "java.lang.ArithmeticException: Divide by zero
+    at clojure.lang.Numbers.divide(Numbers.java:188)
+    at user$eval123.invokeStatic(REPL:1)")
+
+(def parsed (exceptions/parse-exception exception-text {}))
+(exceptions/print-exception* parsed {})
+```
+
+## Performance Considerations
+
+-   **ANSI composition** is fast; overhead is minimal
+-   **Exception formatting** processes entire stack trace; use
+    `:frame-limit` for very deep stacks
+-   **Binary formatting** with `:ascii` doubles memory usage (hex +
+    ASCII)
+-   **Table formatting** calculates widths from all data; slow for huge
+    datasets
+-   **Annotations** are fast; multiple annotations per line add minimal
+    overhead
+
+For large datasets or performance-critical paths, consider: - Format
+once, cache the result - Use `:frame-limit` to reduce exception output -
+Limit table row count for display - Use streaming approaches for binary
+data
+
+## Related Libraries
+
+-   `clojure.pprint` - Basic pretty printing (Pretty extends this)
+-   `puget` - Alternative pretty printer with color support
+-   `fipp` - Fast pretty printer
+-   `bling` - Terminal UI components and coloring
+
+## Resources
+
+-   [GitHub Repository](https://github.com/clj-commons/pretty)
+-   [API Documentation](https://cljdoc.org/d/org.clj-commons/pretty)
+-   [CLJ Commons](https://clj-commons.org/)
+
+## Summary
+
+`clj-commons/pretty` provides five independent formatting capabilities:
+
+1.  **ANSI colors** (`clj-commons.ansi`) - Colored terminal output
+2.  **Exception formatting** (`clj-commons.format.exceptions`) -
+    Readable stack traces
+3.  **Binary visualization** (`clj-commons.format.binary`) - Hex dumps
+    and deltas
+4.  **Table formatting** (`clj-commons.format.table`) - Pretty tabular
+    output
+5.  **Code annotations** (`clj-commons.pretty.annotations`) - Error
+    markers on source
+
+Each can be used independently or combined for comprehensive formatted
+output.

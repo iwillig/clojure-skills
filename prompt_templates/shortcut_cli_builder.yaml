@@ -1,7 +1,9 @@
+---
 title: Shortcut CLI Builder
 author: Ivan Willig
 date: 2025-11-11
 skills:
+  - skills/llm_agent/agent_loop.md
   # Core Clojure fundamentals
   - skills/language/clojure_intro.md
   - skills/language/clojure_repl.md
