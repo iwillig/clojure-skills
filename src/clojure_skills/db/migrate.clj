@@ -4,8 +4,8 @@
    [clojure-skills.config :as config]
    [clojure-skills.logging :as log]
    [ragtime.next-jdbc :as ragtime-jdbc]
-   [ragtime.repl :as ragtime-repl]))
-
+   [ragtime.repl :as ragtime-repl]
+   [ragtime.strategy]))
 
 (defn load-config
   "Load Ragtime configuration from application config."
@@ -17,7 +17,6 @@
      :migrations (ragtime-jdbc/load-resources "migrations")
      :strategy ragtime.strategy/apply-new}))
 
-
 (defn migrate
   "Run all pending migrations."
   []
@@ -27,7 +26,6 @@
     (ragtime-repl/migrate config)
     (log/log-success "Migrations complete")
     (println "Migrations complete.")))
-
 
 (defn rollback
   "Rollback the last migration."
@@ -41,7 +39,6 @@
      (log/log-success "Rollback complete")
      (println "Rollback complete."))))
 
-
 (defn rollback-all
   "Rollback all migrations."
   []
@@ -52,7 +49,6 @@
     (ragtime-repl/rollback config (count migrations))
     (log/log-success "Rollback complete")
     (println "Rollback complete.")))
-
 
 (defn -main
   "Main entry point for migration CLI."
@@ -82,7 +78,6 @@
       (println "  rollback-all     - Rollback all migrations")
       (System/exit 1))))
 
-
 (defn migrate-db
   "Migrate a specific database connection (useful for testing).
    Takes a db-spec map (e.g., {:dbtype \"sqlite\" :dbname \"test.db\"})."
@@ -91,7 +86,6 @@
                 :migrations (ragtime-jdbc/load-resources "migrations")
                 :strategy ragtime.strategy/apply-new}]
     (ragtime-repl/migrate config)))
-
 
 (defn reset-db
   "Reset database by rolling back all migrations and re-applying them.

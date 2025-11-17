@@ -1,12 +1,10 @@
 (ns clojure-skills.sync-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.test :refer [deftest is testing]]
             [clojure-skills.sync :as sync]
-            [clojure-skills.config :as config]
             [clojure-skills.db.core :as db]
             [clojure-skills.db.migrate :as migrate]
             [clojure.java.io :as io]
-            [clojure.string :as str]
-            [next.jdbc :as jdbc]))
+            [clojure.string :as str]))
 
 (deftest test-compute-hash
   (testing "compute-hash generates consistent SHA-256 hash"

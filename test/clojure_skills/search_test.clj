@@ -1,7 +1,6 @@
 (ns clojure-skills.search-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [clojure-skills.search :as search]
-            [clojure-skills.db.migrate :as migrate]
             [next.jdbc.sql :as sql]
             [next.jdbc :as jdbc]
             [clojure-skills.test-utils :as tu]))

@@ -181,6 +181,58 @@
                       (empty? (:prompts results)))
              (println "No results found."))))))))
 
+(defn cmd-search-skills
+  "Search skills."
+  [{:keys [_arguments category max-results]}]
+  (let [query (first _arguments)]
+    (validate-non-blank query "Search query cannot be empty")
+    (handle-command-errors
+     "Search skills"
+     (fn []
+       (let [[_config db] (load-config-and-db)]
+         (print-info (str "Searching skills for: " query))
+         (let [skills (search/search-skills db query
+                                            :max-results (or max-results 50)
+                                            :category category)]
+           (when (seq skills)
+             (println)
+             (println (bling/bling [:bold (format "Found %d skills" (count skills))]))
+             (format-table
+              [:name :category :size :tokens]
+              (map (fn [skill]
+                     {:name (:skills/name skill)
+                      :category (:skills/category skill)
+                      :size (format-size (or (:skills/size_bytes skill) 0))
+                      :tokens (or (:skills/token_count skill) 0)})
+                   skills)))
+           (when (empty? skills)
+             (println "No skills found."))))))))
+
+(defn cmd-search-prompts
+  "Search prompts."
+  [{:keys [_arguments max-results]}]
+  (let [query (first _arguments)]
+    (validate-non-blank query "Search query cannot be empty")
+    (handle-command-errors
+     "Search prompts"
+     (fn []
+       (let [[_config db] (load-config-and-db)]
+         (print-info (str "Searching prompts for: " query))
+         (let [prompts (search/search-prompts db query
+                                              :max-results (or max-results 50))]
+           (when (seq prompts)
+             (println)
+             (println (bling/bling [:bold (format "Found %d prompts" (count prompts))]))
+             (format-table
+              [:name :size :tokens]
+              (map (fn [prompt]
+                     {:name (:prompts/name prompt)
+                      :size (format-size (or (:prompts/size_bytes prompt) 0))
+                      :tokens (or (:prompts/token_count prompt) 0)})
+                   prompts)))
+           (when (empty? prompts)
+             (println "No prompts found."))))))))
+
 (defn cmd-list-skills
   "List all skills."
   [{:keys [category]}]
@@ -792,301 +844,347 @@
 ;; CLI configuration
 
 (def cli-config
-  {:app {:command "clojure-skills"
-         :description "Clojure skills and prompts management with SQLite backend"
-         :version "0.1.0"}
+  {:command "clojure-skills"
+   :description "Clojure skills and prompts management with SQLite backend"
+   :version "0.1.0"
+   :subcommands
+   [{:command "db"
+     :description "Database operations"
+     :subcommands
+     [{:command "init"
+       :description "Initialize the database with required schema"
+       :runs cmd-init}
 
-   :commands
-   [;; Database commands
-    {:command "init"
-     :description "Initialize the database with required schema"
-     :runs cmd-init}
+      {:command "sync"
+       :description "Sync skills and prompts from filesystem to database"
+       :runs cmd-sync}
 
-    {:command "sync"
-     :description "Sync skills and prompts from filesystem to database"
-     :runs cmd-sync}
+      {:command "reset"
+       :description "Reset database (WARNING: destructive - deletes all data)"
+       :opts [{:option "force"
+               :short "f"
+               :as "Skip confirmation"
+               :type :with-flag
+               :default false}]
+       :runs cmd-reset-db}
 
-    {:command "search"
-     :description "Search skills and prompts using FTS5 full-text search"
-     :opts [{:option "category"
-             :short "c"
-             :as "Filter by category (e.g., 'libraries/database')"
-             :type :string}
-            {:option "type"
-             :short "t"
-             :as "Filter by type: 'skills', 'prompts', or 'all'"
-             :type :string
-             :default "all"}
-            {:option "max-results"
-             :short "n"
-             :as "Maximum results to return"
-             :type :int
-             :default 50}]
-     :args [{:arg "query"
-             :as "Search query"
-             :type :string
-             :required true}]
-     :runs cmd-search}
+      {:command "stats"
+       :description "Show database statistics"
+       :runs cmd-stats}]}
 
-    {:command "list-skills"
-     :description "List all skills with metadata"
-     :opts [{:option "category"
-             :short "c"
-             :as "Filter by category"
-             :type :string}]
-     :runs cmd-list-skills}
+    {:command "skill"
+     :description "Skill operations"
+     :subcommands
+     [{:command "search"
+       :description "Search skills using FTS5 full-text search"
+       :opts [{:option "category"
+               :short "c"
+               :as "Filter by category (e.g., 'libraries/database')"
+               :type :string}
+              {:option "max-results"
+               :short "n"
+               :as "Maximum results to return"
+               :type :int
+               :default 50}]
+       :args [{:arg "query"
+               :as "Search query"
+               :type :string
+               :required true}]
+       :runs cmd-search-skills}
 
-    {:command "list-prompts"
-     :description "List all prompts with metadata"
-     :runs cmd-list-prompts}
+      {:command "list"
+       :description "List all skills with metadata"
+       :opts [{:option "category"
+               :short "c"
+               :as "Filter by category"
+               :type :string}]
+       :runs cmd-list-skills}
 
-    {:command "stats"
-     :description "Show database statistics"
-     :runs cmd-stats}
+      {:command "show"
+       :description "Display skill content as JSON"
+       :opts [{:option "category"
+               :short "c"
+               :as "Filter by category"
+               :type :string}]
+       :args [{:arg "name"
+               :as "Skill name"
+               :type :string
+               :required true}]
+       :runs cmd-show-skill}]}
 
-    {:command "reset-db"
-     :description "Reset database (WARNING: destructive - deletes all data)"
-     :opts [{:option "force"
-             :short "f"
-             :as "Skip confirmation"
-             :type :with-flag
-             :default false}]
-     :runs cmd-reset-db}
+    {:command "prompt"
+     :description "Prompt operations"
+     :subcommands
+     [{:command "search"
+       :description "Search prompts using FTS5 full-text search"
+       :opts [{:option "max-results"
+               :short "n"
+               :as "Maximum results to return"
+               :type :int
+               :default 50}]
+       :args [{:arg "query"
+               :as "Search query"
+               :type :string
+               :required true}]
+       :runs cmd-search-prompts}
 
-    {:command "show-skill"
-     :description "Display skill content as JSON"
-     :opts [{:option "category"
-             :short "c"
-             :as "Filter by category"
-             :type :string}]
-     :args [{:arg "name"
-             :as "Skill name"
-             :type :string
-             :required true}]
-     :runs cmd-show-skill}
+      {:command "list"
+       :description "List all prompts with metadata"
+       :runs cmd-list-prompts}]}
 
-    ;; Task tracking - Plans
-    {:command "create-plan"
-     :description "Create a new implementation plan"
-     :opts [{:option "name"
-             :as "Unique plan identifier"
-             :type :string
-             :required true}
-            {:option "title"
-             :as "Plan title"
-             :type :string}
-            {:option "description"
-             :as "Plan description"
-             :type :string}
-            {:option "content"
-             :as "Plan content (markdown)"
-             :type :string}
-            {:option "status"
-             :as "Status: draft, in-progress, completed, archived"
-             :type :string}
-            {:option "created-by"
-             :as "Creator identifier"
-             :type :string}
-            {:option "assigned-to"
-             :as "Assignee identifier"
-             :type :string}]
-     :runs cmd-create-plan}
+    {:command "plan"
+     :description "Implementation plan management"
+     :subcommands
+     [{:command "create"
+       :description "Create a new implementation plan"
+       :opts [{:option "name"
+               :as "Unique plan identifier"
+               :type :string
+               :required true}
+              {:option "title"
+               :as "Plan title"
+               :type :string}
+              {:option "description"
+               :as "Plan description"
+               :type :string}
+              {:option "content"
+               :as "Plan content (markdown)"
+               :type :string}
+              {:option "status"
+               :as "Status: draft, in-progress, completed, archived"
+               :type :string}
+              {:option "created-by"
+               :as "Creator identifier"
+               :type :string}
+              {:option "assigned-to"
+               :as "Assignee identifier"
+               :type :string}]
+       :runs cmd-create-plan}
 
-    {:command "list-plans"
-     :description "List implementation plans"
-     :opts [{:option "status"
-             :as "Filter by status"
-             :type :string}
-            {:option "created-by"
-             :as "Filter by creator"
-             :type :string}
-            {:option "assigned-to"
-             :as "Filter by assignee"
-             :type :string}]
-     :runs cmd-list-plans}
+      {:command "list"
+       :description "List implementation plans"
+       :opts [{:option "status"
+               :as "Filter by status"
+               :type :string}
+              {:option "created-by"
+               :as "Filter by creator"
+               :type :string}
+              {:option "assigned-to"
+               :as "Filter by assignee"
+               :type :string}]
+       :runs cmd-list-plans}
 
-    {:command "show-plan"
-     :description "Show detailed plan information"
-     :args [{:arg "id-or-name"
-             :as "Plan ID or name"
-             :type :string
-             :required true}]
-     :runs cmd-show-plan}
+      {:command "show"
+       :description "Show detailed plan information"
+       :args [{:arg "id-or-name"
+               :as "Plan ID or name"
+               :type :string
+               :required true
+               :short 0}]
+       :runs cmd-show-plan}
 
-    {:command "update-plan"
-     :description "Update an implementation plan"
-     :args [{:arg "id"
-             :as "Plan ID"
-             :type :string
-             :required true}]
-     :opts [{:option "name"
-             :as "New plan identifier"
-             :type :string}
-            {:option "title"
-             :as "New title"
-             :type :string}
-            {:option "description"
-             :as "New description"
-             :type :string}
-            {:option "content"
-             :as "New content"
-             :type :string}
-            {:option "status"
-             :as "New status"
-             :type :string}
-            {:option "assigned-to"
-             :as "New assignee"
-             :type :string}]
-     :runs cmd-update-plan}
+      {:command "update"
+       :description "Update an implementation plan"
+       :args [{:arg "id"
+               :as "Plan ID"
+               :type :string
+               :required true
+               :short 0}]
+       :opts [{:option "name"
+               :as "New plan identifier"
+               :type :string}
+              {:option "title"
+               :as "New title"
+               :type :string}
+              {:option "description"
+               :as "New description"
+               :type :string}
+              {:option "content"
+               :as "New content"
+               :type :string}
+              {:option "status"
+               :as "New status"
+               :type :string}
+              {:option "assigned-to"
+               :as "New assignee"
+               :type :string}]
+       :runs cmd-update-plan}
 
-    {:command "complete-plan"
-     :description "Mark plan as completed"
-     :args [{:arg "id"
-             :as "Plan ID"
-             :type :string
-             :required true}]
-     :runs cmd-complete-plan}
+      {:command "complete"
+       :description "Mark plan as completed"
+       :args [{:arg "id"
+               :as "Plan ID"
+               :type :string
+               :required true
+               :short 0}]
+       :runs cmd-complete-plan}
 
-    {:command "delete-plan"
-     :description "Delete an implementation plan (requires --force)"
-     :args [{:arg "id-or-name"
-             :as "Plan ID or name"
-             :type :string
-             :required true}]
-     :opts [{:option "force"
-             :short "f"
-             :as "Confirm deletion"
-             :type :with-flag
-             :default false}]
-     :runs cmd-delete-plan}
+      {:command "delete"
+       :description "Delete an implementation plan (requires --force)"
+       :args [{:arg "id-or-name"
+               :as "Plan ID or name"
+               :type :string
+               :required true
+               :short 0}]
+       :opts [{:option "force"
+               :short "f"
+               :as "Confirm deletion"
+               :type :with-flag
+               :default false}]
+       :runs cmd-delete-plan}
 
-    ;; Task tracking - Task Lists and Tasks
-    {:command "create-task-list"
-     :description "Create a task list within a plan"
-     :args [{:arg "plan-id"
-             :as "Plan ID"
-             :type :string
-             :required true}]
-     :opts [{:option "name"
-             :as "Task list name"
-             :type :string
-             :required true}
-            {:option "description"
-             :as "Description"
-             :type :string}
-            {:option "position"
-             :as "Display position"
-             :type :int}]
-     :runs cmd-create-task-list}
+      {:command "task-list"
+       :description "Task list operations for plans"
+       :subcommands
+       [{:command "create"
+         :description "Create a task list within a plan"
+         :args [{:arg "plan-id"
+                 :as "Plan ID"
+                 :type :int
+                 :required true
+                 :short 0}]
+         :opts [{:option "name"
+                 :as "Task list name"
+                 :type :string
+                 :required true}
+                {:option "description"
+                 :as "Description"
+                 :type :string}
+                {:option "position"
+                 :as "Display position"
+                 :type :int}]
+         :runs cmd-create-task-list}]}
 
-    {:command "delete-task-list"
-     :description "Delete a task list (requires --force)"
-     :args [{:arg "list-id"
-             :as "Task list ID"
-             :type :string
-             :required true}]
-     :opts [{:option "force"
-             :short "f"
-             :as "Confirm deletion"
-             :type :with-flag
-             :default false}]
-     :runs cmd-delete-task-list}
+      {:command "skill"
+       :description "Skill association operations for plans"
+       :subcommands
+       [{:command "associate"
+         :description "Associate a skill with a plan"
+         :args [{:arg "plan-id"
+                 :as "Plan ID"
+                 :type :int
+                 :required true
+                 :short 0}
+                {:arg "skill-name-or-path"
+                 :as "Skill name or path"
+                 :type :string
+                 :required true
+                 :short 1}]
+         :opts [{:option "position"
+                 :short "p"
+                 :as "Display position"
+                 :type :int
+                 :default 0}]
+         :runs cmd-associate-skill}
 
-    {:command "show-task-list"
-     :description "Show detailed task list information"
-     :args [{:arg "list-id"
-             :as "Task list ID"
-             :type :string
-             :required true}]
-     :runs cmd-show-task-list}
+        {:command "dissociate"
+         :description "Remove skill association from a plan"
+         :args [{:arg "plan-id"
+                 :as "Plan ID"
+                 :type :int
+                 :required true
+                 :short 0}
+                {:arg "skill-name-or-path"
+                 :as "Skill name or path"
+                 :type :string
+                 :required true
+                 :short 1}]
+         :runs cmd-dissociate-skill}
 
-    {:command "create-task"
-     :description "Create a task in a task list"
-     :args [{:arg "list-id"
-             :as "Task list ID"
-             :type :string
-             :required true}]
-     :opts [{:option "name"
-             :as "Task name"
-             :type :string
-             :required true}
-            {:option "description"
-             :as "Description"
-             :type :string}
-            {:option "position"
-             :as "Display position"
-             :type :int}
-            {:option "assigned-to"
-             :as "Assignee"
-             :type :string}]
-     :runs cmd-create-task}
+        {:command "list"
+         :description "List skills associated with a plan"
+         :args [{:arg "plan-id"
+                 :as "Plan ID"
+                 :type :int
+                 :required true
+                 :short 0}]
+         :runs cmd-list-plan-skills}]}]}
 
-    {:command "complete-task"
-     :description "Mark task as completed"
-     :args [{:arg "task-id"
-             :as "Task ID"
-             :type :string
-             :required true}]
-     :runs cmd-complete-task}
+    {:command "task-list"
+     :description "Task list operations"
+     :subcommands
+     [{:command "show"
+       :description "Show detailed task list information"
+       :args [{:arg "list-id"
+               :as "Task list ID"
+               :type :int
+               :required true
+               :short 0}]
+       :runs cmd-show-task-list}
 
-    {:command "delete-task"
-     :description "Delete a task (requires --force)"
-     :args [{:arg "task-id"
-             :as "Task ID"
-             :type :string
-             :required true}]
-     :opts [{:option "force"
-             :short "f"
-             :as "Confirm deletion"
-             :type :with-flag
-             :default false}]
-     :runs cmd-delete-task}
+      {:command "delete"
+       :description "Delete a task list (requires --force)"
+       :args [{:arg "list-id"
+               :as "Task list ID"
+               :type :int
+               :required true
+               :short 0}]
+       :opts [{:option "force"
+               :short "f"
+               :as "Confirm deletion"
+               :type :with-flag
+               :default false}]
+       :runs cmd-delete-task-list}
 
-    {:command "show-task"
-     :description "Show detailed task information"
-     :args [{:arg "task-id"
-             :as "Task ID"
-             :type :string
-             :required true}]
-     :runs cmd-show-task}
+      {:command "task"
+       :description "Task operations for task lists"
+       :subcommands
+       [{:command "create"
+         :description "Create a task in a task list"
+         :args [{:arg "list-id"
+                 :as "Task list ID"
+                 :type :int
+                 :required true
+                 :short 0}]
+         :opts [{:option "name"
+                 :as "Task name"
+                 :type :string
+                 :required true}
+                {:option "description"
+                 :as "Description"
+                 :type :string}
+                {:option "position"
+                 :as "Display position"
+                 :type :int}
+                {:option "assigned-to"
+                 :as "Assignee"
+                 :type :string}]
+         :runs cmd-create-task}]}]}
 
-    ;; Plan-skill associations
-    {:command "associate-skill"
-     :description "Associate a skill with a plan"
-     :args [{:arg "plan-id"
-             :as "Plan ID"
-             :type :string
-             :required true}
-            {:arg "skill-name-or-path"
-             :as "Skill name or path"
-             :type :string
-             :required true}]
-     :opts [{:option "position"
-             :short "p"
-             :as "Display position"
-             :type :int
-             :default 0}]
-     :runs cmd-associate-skill}
+    {:command "task"
+     :description "Task operations"
+     :subcommands
+     [{:command "show"
+       :description "Show detailed task information"
+       :args [{:arg "task-id"
+               :as "Task ID"
+               :type :int
+               :required true
+               :short 0}]
+       :runs cmd-show-task}
 
-    {:command "dissociate-skill"
-     :description "Remove skill association from a plan"
-     :args [{:arg "plan-id"
-             :as "Plan ID"
-             :type :string
-             :required true}
-            {:arg "skill-name-or-path"
-             :as "Skill name or path"
-             :type :string
-             :required true}]
-     :runs cmd-dissociate-skill}
+      {:command "complete"
+       :description "Mark task as completed"
+       :args [{:arg "task-id"
+               :as "Task ID"
+               :type :int
+               :required true
+               :short 0}]
+       :runs cmd-complete-task}
 
-    {:command "list-plan-skills"
-     :description "List skills associated with a plan"
-     :args [{:arg "plan-id"
-             :as "Plan ID"
-             :type :string
-             :required true}]
-     :runs cmd-list-plan-skills}]})
+      {:command "delete"
+       :description "Delete a task (requires --force)"
+       :args [{:arg "task-id"
+               :as "Task ID"
+               :type :int
+               :required true
+               :short 0}]
+       :opts [{:option "force"
+               :short "f"
+               :as "Confirm deletion"
+               :type :with-flag
+               :default false}]
+       :runs cmd-delete-task}]}]})
 
 (defn run-cli
   "Run the CLI with the given arguments."

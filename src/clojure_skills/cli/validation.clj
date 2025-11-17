@@ -117,6 +117,86 @@
    [:id :int]])
 
 ;; ------------------------------------------------------------
+;; Database Operation Schemas
+;; ------------------------------------------------------------
+
+(def init-db-args-schema
+  "Schema for init command (db init)."
+  [:map])
+
+(def sync-db-args-schema
+  "Schema for sync command (db sync)."
+  [:map])
+
+(def reset-db-args-schema
+  "Schema for reset-db command (db reset).
+   Requires --force flag."
+  [:map
+   [:force :boolean]])
+
+(def stats-db-args-schema
+  "Schema for stats command (db stats)."
+  [:map])
+
+;; ------------------------------------------------------------
+;; Skill Operation Schemas
+;; ------------------------------------------------------------
+
+(def search-skills-args-schema
+  "Schema for search command (skill search).
+   Query is required, type and category are optional filters."
+  [:map
+   [:query [:string {:min 1}]]
+   [:type {:optional true} [:maybe [:enum "skills" "prompts" "all"]]]
+   [:category {:optional true} [:maybe [:string {:min 1}]]]
+   [:max-results {:optional true} [:maybe [:int {:min 1}]]]])
+
+(def list-skills-args-schema
+  "Schema for list-skills command (skill list)."
+  [:map
+   [:category {:optional true} [:maybe [:string {:min 1}]]]])
+
+(def show-skill-args-schema
+  "Schema for show-skill command (skill show).
+   Name or path is required, category is optional for disambiguation."
+  [:map
+   [:name-or-path [:string {:min 1}]]
+   [:category {:optional true} [:maybe [:string {:min 1}]]]])
+
+;; ------------------------------------------------------------
+;; Prompt Operation Schemas
+;; ------------------------------------------------------------
+
+(def list-prompts-args-schema
+  "Schema for list-prompts command (prompt list)."
+  [:map])
+
+;; ------------------------------------------------------------
+;; Plan-Skill Association Schemas
+;; ------------------------------------------------------------
+
+(def associate-skill-args-schema
+  "Schema for associate-skill command (plan skill associate).
+   Requires plan ID and skill name/path, position is optional."
+  [:map
+   [:plan-id :int]
+   [:skill-name-or-path [:string {:min 1}]]
+   [:position {:optional true} [:maybe :int]]])
+
+(def dissociate-skill-args-schema
+  "Schema for dissociate-skill command (plan skill dissociate).
+   Requires plan ID and skill name/path."
+  [:map
+   [:plan-id :int]
+   [:skill-name-or-path [:string {:min 1}]]])
+
+(def list-plan-skills-args-schema
+  "Schema for list-plan-skills command (plan skill list).
+   Requires plan ID."
+  [:map
+   [:plan-id :int]])
+
+;; ------------------------------------------------------------
 ;; Validation Functions
 ;; ------------------------------------------------------------
 

@@ -3,10 +3,8 @@
   (:require
    [clojure.test :refer [deftest testing is use-fixtures]]
    [clojure-skills.db.plans :as plans]
-   [clojure-skills.db.migrate :as migrate]
    [malli.core :as m]
    [next.jdbc :as jdbc]
-   [next.jdbc.transaction :as tx]
    [clojure-skills.test-utils :as tu]))
 
 ;; Use shared test database fixture with transaction isolation for better performance

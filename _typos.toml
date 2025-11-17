@@ -12,6 +12,10 @@ Caf = "Caf"
 # core.logic function names
 matche = "matche"
 
+# Clojure function names
+juxt = "juxt"
+uncomplete = "uncomplete"
+
 [files]
 # Respect gitignore by default
 ignore-vcs = false
@@ -22,4 +26,5 @@ extend-exclude = [
   ".cpcache/",
   ".clj-kondo/.cache/",
   ".lsp/",
+  "classes/",
 ]

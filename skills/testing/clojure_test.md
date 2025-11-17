@@ -610,6 +610,241 @@ Control test execution order with `test-ns-hook`:
     "4+4" 8 (+ 4 4)))
 ```
 
+
+### Testing CLI Applications and Side Effects
+
+When testing CLI applications, you often need to prevent actual side effects like System/exit calls or file system operations.
+
+#### Preventing JVM Exit in Tests
+
+Use dynamic vars with `binding` to intercept exit calls:
+
+```clojure
+(ns my-app.cli
+  "CLI with exit handling for testing.")
+
+;; Define a dynamic var for the exit function
+(def ^:dynamic *exit-fn* 
+  "Exit function that can be rebound in tests."
+  (fn [code] (System/exit code)))
+
+(defn cmd-delete [opts]
+  "Delete command that validates and exits on error."
+  (if-not (:force opts)
+    (do
+      (println "Use --force to confirm")
+      (*exit-fn* 1))  ; Call through dynamic var
+    (do-delete opts)))
+
+;; In tests - bind *exit-fn* to prevent JVM exit
+(ns my-app.cli-test
+  (:require [clojure.test :refer [deftest is testing]]
+            [my-app.cli :as cli]))
+
+(defn mock-exit
+  "Mock exit function that throws instead of exiting."
+  [code]
+  (throw (ex-info "Exit called" {:exit-code code})))
+
+(deftest cmd-delete-without-force-test
+  (testing "delete requires --force flag"
+    (binding [cli/*exit-fn* mock-exit]
+      ;; This would normally exit the JVM, but throws instead
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                            #"Exit called"
+                            (cli/cmd-delete {:force false}))))))
+```
+
+**Why this works:**
+- Dynamic vars (declared with `^:dynamic`) can be temporarily rebound with `binding`
+- The binding is thread-local and automatically restored when leaving the binding scope
+- Tests can replace `System/exit` without affecting other tests or the REPL
+
+#### Combining binding and with-redefs
+
+For complex tests, combine `binding` (for dynamic vars) and `with-redefs` (for regular functions):
+
+```clojure
+(deftest complex-cli-test
+  (testing "CLI command with multiple side effects"
+    ;; Bind dynamic vars
+    (binding [cli/*exit-fn* mock-exit
+              *out* (java.io.StringWriter.)]
+      ;; Redefine regular functions
+      (with-redefs [config/load-config (fn [] test-config)
+                    config/init-config (fn [] nil)  ; No file system ops
+                    db/get-connection (fn [] test-db)]
+        
+        ;; Now test the CLI command safely
+        (let [result (cli/cmd-process {:input "test"})]
+          (is (= :success (:status result))))))))
+```
+
+**Pattern:**
+1. Use `binding` for dynamic vars you control (like `*exit-fn*`)
+2. Use `with-redefs` for functions you don't control (like library functions)
+3. Nest them - binding on outside, with-redefs on inside
+
+#### Capturing stdout/stderr
+
+Capture printed output for assertions:
+
+```clojure
+(defn capture-output
+  "Capture stdout and return both result and output."
+  [f]
+  (let [out-writer (java.io.StringWriter.)]
+    (binding [*out* out-writer]
+      (let [result (f)]
+        {:result result
+         :output (str out-writer)}))))
+
+(deftest output-test
+  (testing "command prints expected message"
+    (let [{:keys [result output]} (capture-output #(cli/cmd-help {}))]
+      (is (re-find #"Usage:" output))
+      (is (= 0 result)))))
+```
+
+#### Testing Database Commands
+
+When testing database operations, ensure test isolation:
+
+```clojure
+(def test-db-path (str "test-" (random-uuid) ".db"))
+(def ^:dynamic *test-db* nil)
+
+(defn with-test-db
+  "Fixture that creates and cleans up test database."
+  [f]
+  (let [db-spec {:dbtype "sqlite" :dbname test-db-path}
+        ds (jdbc/get-datasource db-spec)]
+    
+    ;; Clean up any existing test db
+    (try (.delete (java.io.File. test-db-path))
+         (catch Exception _))
+    
+    ;; Run migrations
+    (migrate/migrate-db db-spec)
+    
+    ;; Run tests with test database
+    (binding [*test-db* ds]
+      (f))
+    
+    ;; Clean up
+    (try (.delete (java.io.File. test-db-path))
+         (catch Exception _))))
+
+(use-fixtures :each with-test-db)
+
+(deftest db-operation-test
+  (testing "database operation"
+    (binding [cli/*exit-fn* mock-exit]
+      (with-redefs [cli/load-config-and-db (fn [] [test-config *test-db*])]
+        ;; Test uses isolated test database
+        (cli/cmd-init {})
+        (let [result (jdbc/execute-one! *test-db* 
+                                        ["SELECT COUNT(*) as count FROM skills"])]
+          (is (= 0 (:count result))))))))
+```
+
+**Key principles:**
+- Each test gets a fresh database (`:each` fixture)
+- Use unique filenames to avoid conflicts between parallel tests
+- Always clean up in a finally block or fixture
+- Include all required NOT NULL columns in test data
+
+#### Common Pitfalls
+
+**Problem: Tests hang indefinitely**
+```clojure
+;; BAD - System/exit kills the JVM
+(defn delete-cmd [opts]
+  (when-not (:force opts)
+    (System/exit 1)))  ; Hangs tests!
+```
+
+**Solution: Use dynamic var**
+```clojure
+;; GOOD - Exit function can be rebound
+(def ^:dynamic *exit-fn* (fn [code] (System/exit code)))
+
+(defn delete-cmd [opts]
+  (when-not (:force opts)
+    (*exit-fn* 1)))  ; Can be mocked in tests
+```
+
+**Problem: File system operations in tests**
+```clojure
+;; BAD - Creates actual config files during tests
+(deftest init-test
+  (cmd-init {}))  ; Calls config/init-config which writes files!
+```
+
+**Solution: Mock file operations**
+```clojure
+;; GOOD - Mock file system operations
+(deftest init-test
+  (with-redefs [config/init-config (fn [] nil)]  ; No-op
+    (cmd-init {})))
+```
+
+**Problem: Tests share state**
+```clojure
+;; BAD - All tests use same database file
+(def test-db-path "test.db")
+```
+
+**Solution: Unique database per test run**
+```clojure
+;; GOOD - Each test run gets unique database
+(def test-db-path (str "test-" (random-uuid) ".db"))
+```
+
+#### Best Practices
+
+1. **Always use dynamic vars for testable side effects**
+   - Exit functions
+   - Print functions (use `*out*`, `*err*`)
+   - Time functions (useful for testing timestamps)
+
+2. **Create test helpers for common patterns**
+   ```clojure
+   (defn with-mocked-cli
+     "Run function with all CLI side effects mocked."
+     [f]
+     (binding [cli/*exit-fn* mock-exit
+               *out* (java.io.StringWriter.)]
+       (with-redefs [config/init-config (fn [] nil)
+                     config/load-config (fn [] test-config)]
+         (f))))
+   ```
+
+3. **Test both success and error paths**
+   ```clojure
+   (deftest cmd-test
+     (testing "success path"
+       (binding [cli/*exit-fn* mock-exit]
+         (is (= :success (cli/cmd {:valid true})))))
+     
+     (testing "error path - should exit"
+       (binding [cli/*exit-fn* mock-exit]
+         (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                               #"Exit called"
+                               (cli/cmd {:valid false}))))))
+   ```
+
+4. **Use fixtures for common setup**
+   ```clojure
+   (defn mock-cli-fixture [f]
+     (binding [cli/*exit-fn* mock-exit]
+       (with-redefs [config/load-config (fn [] test-config)]
+         (f))))
+   
+   (use-fixtures :each mock-cli-fixture)
+   ```
+
+This pattern enables comprehensive testing of CLI applications without unwanted side effects.
 ## Advanced Topics
 
 ### Custom Assertion Expressions

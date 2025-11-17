@@ -4,7 +4,6 @@
    [clojure.test :refer [deftest testing is use-fixtures]]
    [clojure-skills.db.plan-skills :as plan-skills]
    [clojure-skills.db.plans :as plans]
-   [clojure-skills.db.migrate :as migrate]
    [malli.core :as m]
    [next.jdbc :as jdbc]
    [clojure-skills.test-utils :as tu]))
