@@ -1,19 +1,19 @@
 (ns clojure-skills.sync
   "Sync markdown files to SQLite database."
   (:require
-    [clj-yaml.core :as yaml]
-    [clojure-skills.config :as config]
-    [clojure-skills.db.core]
-    [clojure-skills.logging :as log]
-    [clojure.java.io :as io]
-    [clojure.string :as str]
-    [next.jdbc :as jdbc]
-    [next.jdbc.sql :as sql])
+   [clj-yaml.core :as yaml]
+   [clojure-skills.config :as config]
+   [clojure-skills.db.core]
+   [clojure-skills.logging :as log]
+   [clojure.java.io :as io]
+   [clojure.string :as str]
+   [next.jdbc :as jdbc]
+   [next.jdbc.sql :as sql])
   (:import
-    (java.io
-      File)
-    (java.security
-      MessageDigest)))
+   (java.io
+    File)
+   (java.security
+    MessageDigest)))
 
 
 (defn compute-hash
@@ -114,7 +114,7 @@
      :title (get frontmatter "title")
      :description (get frontmatter "description")
      :content content
-     :file_hash file-hash ; Using snake_case for SQL compatibility
+     :file_hash file-hash ;; Using snake_case for SQL compatibility
      :size_bytes size-bytes
      :token_count token-count}))
 
@@ -136,7 +136,7 @@
      :description (get frontmatter "description")
      :sections (get frontmatter "sections" [])
      :content content
-     :file_hash file-hash ; Using snake_case for SQL compatibility
+     :file_hash file-hash ;; Using snake_case for SQL compatibility
      :size_bytes size-bytes
      :token_count token-count}))
 

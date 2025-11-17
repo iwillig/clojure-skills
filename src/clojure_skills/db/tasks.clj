@@ -1,9 +1,9 @@
 (ns clojure-skills.db.tasks
   "Database functions for managing task lists and tasks."
   (:require
-    [honey.sql :as sql]
-    [honey.sql.helpers :as helpers :refer [select from where order-by]]
-    [next.jdbc :as jdbc]))
+   [honey.sql :as sql]
+   [honey.sql.helpers :as helpers :refer [select from where order-by]]
+   [next.jdbc :as jdbc]))
 
 
 (defn create-task-list

@@ -1,8 +1,8 @@
 (ns clojure-skills.db.core
   "Database connection management and operations."
   (:require
-    [clojure-skills.config :as config]
-    [clojure-skills.db.migrate :as migrate]))
+   [clojure-skills.config :as config]
+   [clojure-skills.db.migrate :as migrate]))
 
 
 (defn get-db

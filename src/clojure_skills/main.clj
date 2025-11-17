@@ -2,8 +2,8 @@
   "Main entry point for clojure-skills CLI."
   (:gen-class)
   (:require
-    [clojure-skills.cli :as cli]
-    [clojure-skills.logging :as log]))
+   [clojure-skills.cli :as cli]
+   [clojure-skills.logging :as log]))
 
 
 (defn -main

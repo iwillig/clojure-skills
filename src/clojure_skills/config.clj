@@ -6,10 +6,10 @@
   2. ~/.config/clojure-skills/config.edn
   3. Built-in defaults"
   (:require
-    [clojure-skills.logging :as log]
-    [clojure.edn :as edn]
-    [clojure.java.io :as io]
-    [clojure.string :as str]))
+   [clojure-skills.logging :as log]
+   [clojure.edn :as edn]
+   [clojure.java.io :as io]
+   [clojure.string :as str]))
 
 
 (defn get-home-dir

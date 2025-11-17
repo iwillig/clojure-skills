@@ -1,10 +1,10 @@
 (ns clojure-skills.db.migrate
   "Ragtime-based database migrations."
   (:require
-    [clojure-skills.config :as config]
-    [clojure-skills.logging :as log]
-    [ragtime.next-jdbc :as ragtime-jdbc]
-    [ragtime.repl :as ragtime-repl]))
+   [clojure-skills.config :as config]
+   [clojure-skills.logging :as log]
+   [ragtime.next-jdbc :as ragtime-jdbc]
+   [ragtime.repl :as ragtime-repl]))
 
 
 (defn load-config

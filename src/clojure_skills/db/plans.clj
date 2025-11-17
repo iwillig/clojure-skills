@@ -1,8 +1,8 @@
 (ns clojure-skills.db.plans
   "Database functions for managing implementation plans.
-  
+
   All functions use HoneySQL for SQL generation and Malli for validation.
-  
+
   Status values: draft, in-progress, completed, archived, cancelled"
   (:require
    [honey.sql :as sql]
@@ -72,7 +72,7 @@
 
 (defn validate!
   "Validate data against schema. Throws ex-info with humanized errors on failure.
-  
+
   Example:
     (validate! plan-id-schema 123)
     (validate! create-plan-schema {:name \"My Plan\"})"
@@ -100,10 +100,10 @@
 
 (defn create-plan
   "Create a new implementation plan.
-  
+
   Required keys in plan-map:
     :name - Plan name (required, 1-255 chars)
-  
+
   Optional keys:
     :title - Plan title (max 500 chars)
     :description - Plan description (max 2000 chars)
@@ -111,9 +111,9 @@
     :status - Plan status (default: 'draft')
     :created_by - Creator identifier (max 255 chars)
     :assigned_to - Assignee identifier (max 255 chars)
-  
+
   Returns the created plan with all fields.
-  
+
   Example:
     (create-plan db {:name \"API Redesign\"
                      :title \"Redesign REST API\"
@@ -150,9 +150,9 @@
 
 (defn get-plan-by-id
   "Get an implementation plan by ID.
-  
+
   Returns the plan or nil if not found.
-  
+
   Example:
     (get-plan-by-id db 42)"
   [db id]
@@ -173,9 +173,9 @@
 
 (defn get-plan-by-name
   "Get an implementation plan by name.
-  
+
   Returns the plan or nil if not found.
-  
+
   Example:
     (get-plan-by-name db \"API Redesign\")"
   [db name]
@@ -196,16 +196,16 @@
 
 (defn list-plans
   "List implementation plans with optional filtering and pagination.
-  
+
   Options:
     :status - Filter by status (one of: draft, in-progress, completed, archived, cancelled)
     :created_by - Filter by creator (string, max 255 chars)
     :assigned_to - Filter by assignee (string, max 255 chars)
     :limit - Maximum number of results (default: 100, max: 1000)
     :offset - Offset for pagination (default: 0)
-  
+
   Returns a sequence of plans ordered by created_at DESC.
-  
+
   Example:
     (list-plans db)
     (list-plans db :status \"in-progress\" :limit 10)
@@ -236,7 +236,7 @@
 
 (defn update-plan
   "Update an implementation plan by ID.
-  
+
   Updatable fields:
     :name - Plan name (1-255 chars)
     :title - Plan title (max 500 chars)
@@ -244,11 +244,11 @@
     :content - Plan content (any length)
     :status - Plan status (one of valid statuses)
     :assigned_to - Assignee identifier (max 255 chars)
-  
+
   The updated_at timestamp is automatically updated.
-  
+
   Returns the updated plan or throws if plan not found.
-  
+
   Example:
     (update-plan db 42 {:status \"completed\"
                         :title \"Updated Title\"})"
@@ -291,9 +291,9 @@
 
 (defn delete-plan
   "Delete an implementation plan by ID.
-  
+
   Returns the deleted plan or throws if plan not found.
-  
+
   Example:
     (delete-plan db 42)"
   [db id]
@@ -316,22 +316,22 @@
 
 (defn search-plans
   "Search implementation plans using FTS5 full-text search.
-  
+
   The query uses FTS5 syntax and searches across name, title, description, and content.
   Results include snippets showing matching text and are ranked by relevance.
-  
+
   Options:
     :max-results - Maximum number of results (default: 50, max: 1000)
-  
+
   Returns a sequence of plans with:
     - All plan fields
     - :snippet - Text snippet showing matches (with [...] markers)
     - :rank - Relevance score (lower is better)
-  
+
   Example:
     (search-plans db \"REST API\")
     (search-plans db \"authentication OR authorization\" :max-results 10)
-  
+
   FTS5 query syntax:
     - \"word1 word2\" - Both words (AND)
     - \"word1 OR word2\" - Either word
@@ -366,10 +366,10 @@
 
 (defn complete-plan
   "Mark an implementation plan as completed.
-  
+
   Sets status to 'completed' and records completed_at timestamp.
   Returns the updated plan or throws if plan not found.
-  
+
   Example:
     (complete-plan db 42)"
   [db id]
@@ -398,10 +398,10 @@
 
 (defn archive-plan
   "Archive an implementation plan.
-  
+
   Sets status to 'archived'. Archived plans are typically hidden from normal listings.
   Returns the updated plan or throws if plan not found.
-  
+
   Example:
     (archive-plan db 42)"
   [db id]

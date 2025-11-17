@@ -1,7 +1,7 @@
 (ns clojure-skills.logging
   "Logging utilities using μ/log for structured event-based logging."
   (:require
-    [com.brunobonacci.mulog :as μ]))
+   [com.brunobonacci.mulog :as μ]))
 
 
 (defonce publisher
@@ -28,9 +28,9 @@
   "Set global context for all log events."
   []
   (μ/set-global-context!
-    {:app-name "clojure-skills"
-     :version "1.0.0"
-     :host (.getHostName (java.net.InetAddress/getLocalHost))}))
+   {:app-name "clojure-skills"
+    :version "1.0.0"
+    :host (.getHostName (java.net.InetAddress/getLocalHost))}))
 
 
 (defn log-success

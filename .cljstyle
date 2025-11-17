@@ -1,0 +1,33 @@
+;; -*- mode: clojure; -*-
+;; config for cljstyle (https://github.com/greglook/cljstyle)
+
+{:rules
+ {;; don't force lines between top-level forms
+  :blank-lines {:insert-padding? false}
+
+  ;; be consistent with inline (end of line) comments. This will generate ";; the comment"
+  :comments {:inline-prefix "; "}
+
+  ;; don't force the function args to always be on a new line
+  :functions {:enabled? false}
+
+  :indentation
+  {:indents
+   {;; treat namespaced def*, with-* the same as their non-namespaced versions
+    #"/def"   [[:inner 0]]
+    #"/with-" [[:inner 0]]
+    #"/fdef"  [[:inner 0]]
+
+    within [[:inner 0]]
+
+    ;; treat deftype, defrecord like proxy
+    defrecord [[:block 2] [:inner 1]]
+    deftype   [[:block 2] [:inner 1]]}
+   ;; mimic the emacs default indent to reduce delta from existing code
+   :list-indent 1}
+
+  ;; mimic the emacs default indent to reduce delta from existing code
+  :namespaces {:indent-size 1}
+
+  ;; cljstyle's type formatting is a bit aggressive, so disable
+  :types {:enabled? false}}}
