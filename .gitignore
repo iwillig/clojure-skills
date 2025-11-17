@@ -1,0 +1,49 @@
+# Build artifacts
+_build/
+target/
+classes/
+*.jar
+*.class
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+
+# Pipenv
+Pipfile.lock
+
+# HuggingFace cache (optional - comment out if you want to cache models)
+# .cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+test-db.db
+junit.xml
+
+# Docs
+docs.html
+
+# REPL
+.nrepl-port
+.nrepl-history
+
+# Compressed files (optional - comment out if you want to commit compressed versions)
+*.compressed.md
+/.lsp/
+/.clj-kondo/
+/.cpcache/
