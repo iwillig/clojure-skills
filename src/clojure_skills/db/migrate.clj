@@ -2,14 +2,14 @@
   "Ragtime-based database migrations."
   (:require [ragtime.next-jdbc :as ragtime-jdbc]
             [ragtime.repl :as ragtime-repl]
-            [clojure-skills.config :as config]
-            [clojure-skills.db.core :as db]))
+            [clojure-skills.config :as config]))
 
 (defn load-config
   "Load Ragtime configuration from application config."
   []
   (let [app-config (config/load-config)
-        db-spec (db/get-db app-config)]
+        db-path (config/get-db-path app-config)
+        db-spec {:dbtype "sqlite" :dbname db-path}]
     {:datastore (ragtime-jdbc/sql-database db-spec)
      :migrations (ragtime-jdbc/load-resources "migrations")
      :strategy ragtime.strategy/apply-new}))
@@ -57,3 +57,26 @@
       (println "  rollback [n]     - Rollback last n migrations (default: 1)")
       (println "  rollback-all     - Rollback all migrations")
       (System/exit 1))))
+
+(defn migrate-db
+  "Migrate a specific database connection (useful for testing).
+   Takes a db-spec map (e.g., {:dbtype \"sqlite\" :dbname \"test.db\"})."
+  [db-spec]
+  (let [config {:datastore (ragtime-jdbc/sql-database db-spec)
+                :migrations (ragtime-jdbc/load-resources "migrations")
+                :strategy ragtime.strategy/apply-new}]
+    (ragtime-repl/migrate config)))
+
+(defn reset-db
+  "Reset database by rolling back all migrations and re-applying them.
+   Takes a db-spec map (e.g., {:dbtype \"sqlite\" :dbname \"test.db\"})."
+  [db-spec]
+  (let [config {:datastore (ragtime-jdbc/sql-database db-spec)
+                :migrations (ragtime-jdbc/load-resources "migrations")
+                :strategy ragtime.strategy/apply-new}
+        migrations (:migrations config)]
+    ;; Rollback all migrations
+    (when (pos? (count migrations))
+      (ragtime-repl/rollback config (count migrations)))
+    ;; Re-apply all migrations
+    (ragtime-repl/migrate config)))

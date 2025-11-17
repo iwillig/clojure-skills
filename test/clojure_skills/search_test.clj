@@ -1,7 +1,7 @@
 (ns clojure-skills.search-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [clojure-skills.search :as search]
-            [clojure-skills.db.schema :as schema]
+            [clojure-skills.db.migrate :as migrate]
             [next.jdbc.sql :as sql]
             [clojure.java.io :as io]))
 
@@ -12,8 +12,8 @@
     ;; Clean up existing
     (when (.exists (io/file test-db-path))
       (.delete (io/file test-db-path)))
-    ;; Create schema
-    (schema/migrate db)
+    ;; Create schema using Ragtime migrations
+    (migrate/migrate-db db)
     ;; Insert test data
     (sql/insert! db :skills
                  {:path "skills/language/clojure.md"

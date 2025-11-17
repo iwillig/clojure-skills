@@ -3,7 +3,7 @@
             [clojure-skills.sync :as sync]
             [clojure-skills.config :as config]
             [clojure-skills.db.core :as db]
-            [clojure-skills.db.schema :as schema]
+            [clojure-skills.db.migrate :as migrate]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [next.jdbc :as jdbc]))
@@ -124,9 +124,9 @@
         (when (.exists (io/file test-db-path))
           (io/delete-file test-db-path))
 
-        ;; Initialize test database
+        ;; Initialize test database using Ragtime migrations
         (let [test-db (db/get-db test-config)]
-          (schema/migrate test-db)
+          (migrate/migrate-db test-db)
 
           ;; Create a temporary test skill file
           (let [test-skill-dir "test-skills"

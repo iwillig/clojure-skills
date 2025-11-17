@@ -6,9 +6,10 @@
             [clj-commons.format.table :as table]
             [clj-commons.format.exceptions :as ex]
             [jsonista.core :as json]
+            [clojure.java.io :as io]
             [clojure-skills.config :as config]
             [clojure-skills.db.core :as db]
-            [clojure-skills.db.schema :as schema]
+            [clojure-skills.db.migrate :as migrate]
             [clojure-skills.sync :as sync]
             [clojure-skills.search :as search]))
 
@@ -105,6 +106,8 @@
    "Sync"
    (fn []
      (let [[config db] (load-config-and-db)]
+       ;; Ensure database is initialized (migrations applied)
+       (db/init-db db)
        (print-info "Syncing skills and prompts...")
        (sync/sync-all db config)
        (print-success "Sync complete")))))
@@ -239,7 +242,7 @@
      (fn []
        (let [[_config db] (load-config-and-db)]
          (print-info "Resetting database...")
-         (schema/reset-database db)
+         (migrate/reset-db db)
          (print-success "Database reset complete"))))))
 
 (defn cmd-show-skill
