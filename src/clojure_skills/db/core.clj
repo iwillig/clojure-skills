@@ -1,7 +1,9 @@
 (ns clojure-skills.db.core
   "Database connection management and operations."
-  (:require [clojure-skills.config :as config]
-            [clojure-skills.db.migrate :as migrate]))
+  (:require
+    [clojure-skills.config :as config]
+    [clojure-skills.db.migrate :as migrate]))
+
 
 (defn get-db
   "Get database connection spec from config.
@@ -12,6 +14,7 @@
    (let [db-path (config/get-db-path config)]
      {:dbtype "sqlite"
       :dbname db-path})))
+
 
 (defn init-db
   "Initialize database with Ragtime migrations."

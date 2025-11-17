@@ -2,9 +2,12 @@
   "Database schema definitions for clojure-skills.
   
   Uses SQLite with FTS5 for full-text search."
-  (:require [next.jdbc :as jdbc]))
+  (:require
+    [next.jdbc :as jdbc]))
+
 
 (def schema-version 1)
+
 
 (def migrations
   "Database migrations in order."
@@ -145,6 +148,7 @@
      "DROP TABLE IF EXISTS skills"
      "DROP TABLE IF EXISTS schema_version"]}])
 
+
 (defn get-current-version
   "Get current schema version from database."
   [db]
@@ -154,15 +158,17 @@
     (catch Exception _
       0)))
 
+
 (defn apply-migration
   "Apply a single migration."
   [db migration]
   (let [{:keys [version up]} migration]
     (println (format "Applying migration v%d..." version))
     (jdbc/with-transaction [tx db]
-      (doseq [statement up]
-        (jdbc/execute! tx [statement]))
-      (jdbc/execute! tx ["INSERT INTO schema_version (version) VALUES (?)" version]))))
+                           (doseq [statement up]
+                             (jdbc/execute! tx [statement]))
+                           (jdbc/execute! tx ["INSERT INTO schema_version (version) VALUES (?)" version]))))
+
 
 (defn migrate
   "Run all pending migrations."
@@ -177,18 +183,19 @@
           (apply-migration db migration))
         (println "Migrations complete.")))))
 
+
 (defn reset-database
   "Drop all tables and re-run migrations. USE WITH CAUTION!"
   [db]
   (println "WARNING: Resetting database...")
   (jdbc/with-transaction [tx db]
-    ;; Apply down migrations in reverse order
-    (doseq [migration (reverse migrations)]
-      (doseq [statement (:down migration)]
-        (try
-          (jdbc/execute! tx [statement])
-          (catch Exception e
-            ;; Ignore errors for non-existent objects
-            (when-not (re-find #"no such table|no such trigger|no such index" (.getMessage e))
-              (throw e)))))))
+                         ;; Apply down migrations in reverse order
+                         (doseq [migration (reverse migrations)]
+                           (doseq [statement (:down migration)]
+                             (try
+                               (jdbc/execute! tx [statement])
+                               (catch Exception e
+                                 ;; Ignore errors for non-existent objects
+                                 (when-not (re-find #"no such table|no such trigger|no such index" (.getMessage e))
+                                   (throw e)))))))
   (migrate db))

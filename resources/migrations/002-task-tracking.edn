@@ -1,0 +1,97 @@
+{:id "002-task-tracking"
+
+ :up
+ ["CREATE TABLE IF NOT EXISTS implementation_plans (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     name TEXT NOT NULL,
+     title TEXT,
+     description TEXT,
+     content TEXT NOT NULL,
+     status TEXT NOT NULL DEFAULT 'draft',
+     created_by TEXT,
+     assigned_to TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+     completed_at TEXT
+   )"
+
+  "CREATE INDEX idx_implementation_plans_status ON implementation_plans(status)"
+  "CREATE INDEX idx_implementation_plans_created_by ON implementation_plans(created_by)"
+  "CREATE INDEX idx_implementation_plans_assigned_to ON implementation_plans(assigned_to)"
+
+  "CREATE TABLE IF NOT EXISTS task_lists (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     plan_id INTEGER NOT NULL,
+     name TEXT NOT NULL,
+     description TEXT,
+     position INTEGER NOT NULL,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+     FOREIGN KEY (plan_id) REFERENCES implementation_plans(id) ON DELETE CASCADE
+   )"
+
+  "CREATE INDEX idx_task_lists_plan_id ON task_lists(plan_id)"
+  "CREATE INDEX idx_task_lists_position ON task_lists(position)"
+
+  "CREATE TABLE IF NOT EXISTS tasks (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     list_id INTEGER NOT NULL,
+     name TEXT NOT NULL,
+     description TEXT,
+     completed BOOLEAN NOT NULL DEFAULT FALSE,
+     position INTEGER NOT NULL,
+     assigned_to TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+     completed_at TEXT,
+     FOREIGN KEY (list_id) REFERENCES task_lists(id) ON DELETE CASCADE
+   )"
+
+  "CREATE INDEX idx_tasks_list_id ON tasks(list_id)"
+  "CREATE INDEX idx_tasks_completed ON tasks(completed)"
+  "CREATE INDEX idx_tasks_position ON tasks(position)"
+  "CREATE INDEX idx_tasks_assigned_to ON tasks(assigned_to)"
+
+  "CREATE VIRTUAL TABLE IF NOT EXISTS implementation_plans_fts USING fts5(
+     name,
+     title,
+     description,
+     content,
+     content='implementation_plans',
+     content_rowid='id'
+   )"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_ai AFTER INSERT ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(rowid, name, title, description, content)
+     VALUES (new.id, new.name, new.title, new.description, new.content);
+   END"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_ad AFTER DELETE ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(implementation_plans_fts, rowid, name, title, description, content)
+     VALUES('delete', old.id, old.name, old.title, old.description, old.content);
+   END"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_au AFTER UPDATE ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(implementation_plans_fts, rowid, name, title, description, content)
+     VALUES('delete', old.id, old.name, old.title, old.description, old.content);
+     INSERT INTO implementation_plans_fts(rowid, name, title, description, content)
+     VALUES (new.id, new.name, new.title, new.description, new.content);
+   END"]
+
+ :down
+ ["DROP TRIGGER IF EXISTS implementation_plans_au"
+  "DROP TRIGGER IF EXISTS implementation_plans_ad"
+  "DROP TRIGGER IF EXISTS implementation_plans_ai"
+  "DROP TABLE IF EXISTS implementation_plans_fts"
+  "DROP INDEX IF EXISTS idx_tasks_assigned_to"
+  "DROP INDEX IF EXISTS idx_tasks_position"
+  "DROP INDEX IF EXISTS idx_tasks_completed"
+  "DROP INDEX IF EXISTS idx_tasks_list_id"
+  "DROP TABLE IF EXISTS tasks"
+  "DROP INDEX IF EXISTS idx_task_lists_position"
+  "DROP INDEX IF EXISTS idx_task_lists_plan_id"
+  "DROP TABLE IF EXISTS task_lists"
+  "DROP INDEX IF EXISTS idx_implementation_plans_assigned_to"
+  "DROP INDEX IF EXISTS idx_implementation_plans_created_by"
+  "DROP INDEX IF EXISTS idx_implementation_plans_status"
+  "DROP TABLE IF EXISTS implementation_plans"]}

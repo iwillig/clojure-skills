@@ -111,7 +111,7 @@ clj-commons/clj-yaml      ; YAML parsing
 
 ;; Database
 next.jdbc                 ; JDBC wrapper
-honeysql                  ; SQL DSL
+honeysql                  ; SQL DSL - ALWAYS use HoneySQL for SQL generation
 ragtime                   ; Migrations
 sqlite-jdbc               ; SQLite driver
 
@@ -120,6 +120,27 @@ cambium/*                 ; Structured logging (Logback)
 
 ;; CLI
 cli-matic/cli-matic       ; Command-line parsing
+```
+
+### Database Development Guidelines
+
+**ALWAYS use HoneySQL for SQL generation** - Never write raw SQL strings directly. HoneySQL provides:
+- Type-safe SQL generation
+- Composable query building
+- Protection against SQL injection
+- Better maintainability and testability
+
+**Example:**
+```clojure
+;; DON'T - Raw SQL
+(jdbc/execute-one! db ["UPDATE tasks SET completed = 1 WHERE id = ?" id])
+
+;; DO - HoneySQL
+(-> (helpers/update :tasks)
+    (helpers/set {:completed 1})
+    (where [:= :id id])
+    (sql/format {:returning [:*]})
+    (->> (jdbc/execute-one! db)))
 ```
 
 ---

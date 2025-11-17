@@ -16,9 +16,9 @@
      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
    )"
 
-  "CREATE INDEX idx_skills_category ON skills(category)"
-  "CREATE INDEX idx_skills_name ON skills(name)"
-  "CREATE INDEX idx_skills_hash ON skills(file_hash)"
+  "CREATE INDEX IF NOT EXISTS idx_skills_category ON skills(category)"
+  "CREATE INDEX IF NOT EXISTS idx_skills_name ON skills(name)"
+  "CREATE INDEX IF NOT EXISTS idx_skills_hash ON skills(file_hash)"
 
   "CREATE TABLE IF NOT EXISTS prompts (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,8 +35,8 @@
      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
    )"
 
-  "CREATE INDEX idx_prompts_name ON prompts(name)"
-  "CREATE INDEX idx_prompts_hash ON prompts(file_hash)"
+  "CREATE INDEX IF NOT EXISTS idx_prompts_name ON prompts(name)"
+  "CREATE INDEX IF NOT EXISTS idx_prompts_hash ON prompts(file_hash)"
 
   "CREATE TABLE IF NOT EXISTS prompt_skills (
      prompt_id INTEGER NOT NULL,
@@ -47,8 +47,8 @@
      FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE
    )"
 
-  "CREATE INDEX idx_prompt_skills_prompt ON prompt_skills(prompt_id)"
-  "CREATE INDEX idx_prompt_skills_skill ON prompt_skills(skill_id)"
+  "CREATE INDEX IF NOT EXISTS idx_prompt_skills_prompt ON prompt_skills(prompt_id)"
+  "CREATE INDEX IF NOT EXISTS idx_prompt_skills_skill ON prompt_skills(skill_id)"
 
   "CREATE VIRTUAL TABLE IF NOT EXISTS skills_fts USING fts5(
      path,

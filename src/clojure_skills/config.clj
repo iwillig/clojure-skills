@@ -5,15 +5,18 @@
   1. Environment variables
   2. ~/.config/clojure-skills/config.edn
   3. Built-in defaults"
-  (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure-skills.logging :as log]))
+  (:require
+    [clojure-skills.logging :as log]
+    [clojure.edn :as edn]
+    [clojure.java.io :as io]
+    [clojure.string :as str]))
+
 
 (defn get-home-dir
   "Get user's home directory."
   []
   (System/getProperty "user.home"))
+
 
 (defn get-xdg-config-home
   "Get XDG config directory, defaulting to ~/.config"
@@ -21,10 +24,12 @@
   (or (System/getenv "XDG_CONFIG_HOME")
       (str (get-home-dir) "/.config")))
 
+
 (defn get-config-dir
   "Get clojure-skills config directory."
   []
   (str (get-xdg-config-home) "/clojure-skills"))
+
 
 (defn expand-path
   "Expand ~ in paths to home directory."
@@ -32,6 +37,7 @@
   (if (str/starts-with? path "~")
     (str/replace-first path "~" (get-home-dir))
     path))
+
 
 (def default-config
   "Default configuration values."
@@ -53,10 +59,12 @@
    {:format :table
     :color true}})
 
+
 (defn get-config-file-path
   "Get path to config.edn file."
   []
   (str (get-config-dir) "/config.edn"))
+
 
 (defn load-config-file
   "Load configuration from file if it exists."
@@ -69,6 +77,7 @@
           (log/log-warning "Failed to load config file" :path config-path :error (.getMessage e))
           nil)))))
 
+
 (defn get-env-overrides
   "Get configuration overrides from environment variables."
   []
@@ -78,6 +87,7 @@
 
     (System/getenv "CLOJURE_SKILLS_PROJECT_ROOT")
     (assoc-in [:project :root] (System/getenv "CLOJURE_SKILLS_PROJECT_ROOT"))))
+
 
 (defn deep-merge
   "Recursively merge maps."
@@ -89,6 +99,7 @@
              v2))
          maps))
 
+
 (defn load-config
   "Load configuration with priority:
    1. Environment variables
@@ -99,10 +110,12 @@
         env-config (get-env-overrides)]
     (deep-merge default-config file-config env-config)))
 
+
 (defn get-db-path
   "Get database path with expansion."
   [config]
   (expand-path (get-in config [:database :path])))
+
 
 (defn ensure-config-dir
   "Ensure config directory exists."
@@ -111,11 +124,13 @@
     (when-not (.exists (io/file config-dir))
       (.mkdirs (io/file config-dir)))))
 
+
 (defn save-config
   "Save configuration to file."
   [config]
   (ensure-config-dir)
   (spit (get-config-file-path) (pr-str config)))
+
 
 (defn init-config
   "Initialize configuration if it doesn't exist."

@@ -1,6 +1,8 @@
 (ns clojure-skills.search
   "Full-text search using SQLite FTS5."
-  (:require [next.jdbc :as jdbc]))
+  (:require
+    [next.jdbc :as jdbc]))
+
 
 (defn search-skills
   "Search skills using FTS5 full-text search.
@@ -24,6 +26,7 @@
                  [query max-results])]
     (jdbc/execute! db (into [sql] params))))
 
+
 (defn search-prompts
   "Search prompts using FTS5 full-text search.
    
@@ -41,6 +44,7 @@
         params [query max-results]]
     (jdbc/execute! db (into [sql] params))))
 
+
 (defn search-all
   "Search both skills and prompts.
    
@@ -51,6 +55,7 @@
                           (when category [:category category])))
    :prompts (search-prompts db query :max-results max-results)})
 
+
 (defn list-categories
   "List all unique skill categories with counts."
   [db]
@@ -58,6 +63,7 @@
                       FROM skills 
                       GROUP BY category 
                       ORDER BY category"]))
+
 
 (defn list-skills
   "List all skills, optionally filtered by category.
@@ -77,6 +83,7 @@
                  [limit offset])]
     (jdbc/execute! db (into [sql] params))))
 
+
 (defn list-prompts
   "List all prompts.
    
@@ -87,6 +94,7 @@
   (jdbc/execute! db ["SELECT * FROM prompts ORDER BY name LIMIT ? OFFSET ?"
                      limit offset]))
 
+
 (defn get-skill-by-name
   "Get a skill by its name and optionally category."
   [db name & {:keys [category]}]
@@ -95,10 +103,12 @@
                            name category])
     (jdbc/execute-one! db ["SELECT * FROM skills WHERE name = ?" name])))
 
+
 (defn get-prompt-by-name
   "Get a prompt by its name."
   [db name]
   (jdbc/execute-one! db ["SELECT * FROM prompts WHERE name = ?" name]))
+
 
 (defn get-stats
   "Get database statistics."

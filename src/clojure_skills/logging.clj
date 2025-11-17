@@ -1,9 +1,12 @@
 (ns clojure-skills.logging
   "Logging utilities using μ/log for structured event-based logging."
-  (:require [com.brunobonacci.mulog :as μ]))
+  (:require
+    [com.brunobonacci.mulog :as μ]))
+
 
 (defonce publisher
   (atom nil))
+
 
 (defn start-logging!
   "Initialize μ/log publisher for console output."
@@ -12,6 +15,7 @@
     (reset! publisher
             (μ/start-publisher! {:type :console :pretty? true}))))
 
+
 (defn stop-logging!
   "Stop the μ/log publisher."
   []
@@ -19,13 +23,15 @@
     (p)
     (reset! publisher nil)))
 
+
 (defn set-global-context!
   "Set global context for all log events."
   []
   (μ/set-global-context!
-   {:app-name "clojure-skills"
-    :version "1.0.0"
-    :host (.getHostName (java.net.InetAddress/getLocalHost))}))
+    {:app-name "clojure-skills"
+     :version "1.0.0"
+     :host (.getHostName (java.net.InetAddress/getLocalHost))}))
+
 
 (defn log-success
   "Log a success message."
@@ -36,6 +42,7 @@
          :level :success
          kv-data))
 
+
 (defn log-error
   "Log an error message."
   [message & {:as kv-data}]
@@ -44,6 +51,7 @@
          :timestamp (System/currentTimeMillis)
          :level :error
          kv-data))
+
 
 (defn log-info
   "Log an info message."
@@ -54,6 +62,7 @@
          :level :info
          kv-data))
 
+
 (defn log-warning
   "Log a warning message."
   [message & {:as kv-data}]
@@ -63,6 +72,7 @@
          :level :warning
          kv-data))
 
+
 (defn log-debug
   "Log a debug message."
   [message & {:as kv-data}]
@@ -71,6 +81,7 @@
          :timestamp (System/currentTimeMillis)
          :level :debug
          kv-data))
+
 
 (defn log-exception
   "Log an exception with error details."
@@ -84,6 +95,7 @@
          :level :error
          kv-data))
 
+
 (defn log-sync-operation
   "Log a synchronization operation with timing."
   [operation-name duration-ms & {:as kv-data}]
@@ -93,6 +105,7 @@
             :timestamp (System/currentTimeMillis)]
            kv-data))
 
+
 (defn log-db-operation
   "Log a database operation."
   [operation-name table-name & {:as kv-data}]
@@ -101,6 +114,7 @@
          :table table-name
          :timestamp (System/currentTimeMillis)
          kv-data))
+
 
 (comment
   ;; Example usage:
