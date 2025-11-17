@@ -487,6 +487,194 @@ The build process:
 3. Combines all referenced skills
 4. Outputs to `_build/my_agent.md`
 
+### Using Built Prompts with OpenCode
+
+Once you've built a prompt, you can use it directly with the OpenCode CLI to create a custom agent:
+
+```bash
+# Build your prompt first
+bb build my_agent
+
+# Create an OpenCode agent from the built prompt
+opencode agent create
+
+# When prompted:
+# - Agent name: my-clojure-agent
+# - Select "Load from file"
+# - File path: /path/to/clojure-skills/_build/my_agent.md
+
+# Or use the agent in a one-off run
+opencode run --agent my-clojure-agent "Help me validate this data structure"
+
+# Start TUI with your custom agent
+opencode --agent my-clojure-agent
+```
+
+**OpenCode CLI commands:**
+
+```bash
+# Create a new agent with custom system prompt
+opencode agent create
+
+# List available models for your agent
+opencode models
+
+# Run a one-off command with your agent
+opencode run --agent my-clojure-agent "Your prompt here"
+
+# Start interactive TUI
+opencode --agent my-clojure-agent
+
+# Continue a previous session
+opencode --continue --agent my-clojure-agent
+
+# Use a specific model
+opencode --model anthropic/claude-3-5-sonnet-20241022 --agent my-clojure-agent
+```
+
+**Example workflow:**
+
+```bash
+# 1. Search for relevant skills
+clojure-skills search "validation database testing"
+
+# 2. Create a custom prompt with those skills
+cat > prompts/data_specialist.md <<'EOF'
+---
+title: Data Validation Specialist
+author: Your Name
+date: 2025-11-17
+sections:
+  - skills/language/clojure_intro.md
+  - skills/language/clojure_repl.md
+  - skills/libraries/data_validation/malli.md
+  - skills/libraries/database/next_jdbc.md
+  - skills/testing/kaocha.md
+---
+
+# You are a Clojure Data Validation Specialist
+
+You help developers build robust applications with proper validation.
+EOF
+
+# 3. Build the prompt
+bb build data_specialist
+
+# 4. Create OpenCode agent from built prompt
+opencode agent create
+# Follow prompts to load _build/data_specialist.md
+
+# 5. Use your custom agent
+opencode --agent data-specialist
+```
+
+**Tip:** Built prompts in `_build/` are ready to use directly as OpenCode system prompts. You can also manually configure agents in `~/.config/opencode/agents/` by creating a JSON file with your prompt.
+
+### Using the Skill Builder Agent
+
+The clojure-skills repository includes a specialized `clojure_skill_builder` agent designed to create new skill documents from library documentation. This agent is already built and ready to use with OpenCode.
+
+**Quick start - Generate a skill in one command:**
+
+```bash
+# Generate a skill for Promesa (promise library)
+opencode run --agent clojure-skill-builder \
+  "Create a skill for the Promesa library (https://github.com/funcool/promesa). \
+   Focus on core promise operations, async/await patterns, executors, and practical \
+   examples. Use the documentation at https://funcool.github.io/promesa/latest/. \
+   Save the skill to skills/libraries/async/promesa.md"
+```
+
+**What the skill builder agent does:**
+
+1. Fetches documentation from the provided URL
+2. Analyzes the library's core concepts and API
+3. Creates a well-structured skill document following the template:
+   - YAML frontmatter with metadata
+   - Quick Start section with working examples
+   - Core Concepts explanation
+   - Common Workflows with practical patterns
+   - Best Practices (do's and don'ts)
+   - Troubleshooting section
+4. Saves the skill to the specified path
+5. Syncs it to the database automatically
+
+**The skill builder is trained on:**
+
+- 73+ existing skill examples showing the expected format
+- Clojure best practices and REPL-driven development
+- Documentation patterns from libraries like Malli, next.jdbc, http-kit
+- Integration with the clojure-skills database structure
+
+**After the skill is generated:**
+
+```bash
+# Verify the skill was created
+ls -lh skills/libraries/async/promesa.md
+
+# Sync to database
+clojure-skills sync
+
+# Search for your new skill
+clojure-skills search "promesa"
+
+# View the skill content
+clojure-skills show-skill promesa -c libraries/async
+```
+
+**Interactive mode for refinement:**
+
+```bash
+# Start interactive session with skill builder
+opencode --agent clojure-skill-builder
+
+# Then provide detailed instructions:
+# "I want to create a skill for Promesa. Here's what I need:
+#  - Focus on the promise/deferred abstraction
+#  - Include examples of p/let, p/chain, p/all
+#  - Show how to use executors for virtual threads
+#  - Add troubleshooting for common blocking issues
+#  - Save to skills/libraries/async/promesa.md"
+```
+
+**More examples:**
+
+```bash
+# Generate skill for any Clojure library
+opencode run --agent clojure-skill-builder \
+  "Create a skill for Datalevin (https://github.com/juji-io/datalevin). \
+   Focus on the Datalog query API, entity API, and schema definition. \
+   Save to skills/libraries/database/datalevin.md"
+
+# Generate skill for a testing library
+opencode run --agent clojure-skill-builder \
+  "Create a skill for Lazytest (https://github.com/noahtheduke/lazytest). \
+   Focus on the test definition syntax, fixtures, and REPL workflow. \
+   Save to skills/testing/lazytest.md"
+
+# Generate skill for a tool
+opencode run --agent clojure-skill-builder \
+  "Create a skill for Depot (https://github.com/Olical/depot). \
+   Focus on checking outdated dependencies and updating deps.edn. \
+   Save to skills/tooling/depot.md"
+```
+
+**Skill builder agent is located at:** `prompts/clojure_skill_builder.md`
+
+To customize or rebuild it:
+
+```bash
+# View the prompt configuration
+cat prompts/clojure_skill_builder.md
+
+# Rebuild after modifications
+bb build clojure_skill_builder
+
+# Use the rebuilt version
+opencode agent create
+# Load from: _build/clojure_skill_builder.md
+```
+
 ### Available Tasks
 
 ```bash
