@@ -1,7 +1,6 @@
 (ns clojure-skills.search
   "Full-text search using SQLite FTS5."
-  (:require [next.jdbc :as jdbc]
-            [clojure.string :as str]))
+  (:require [next.jdbc :as jdbc]))
 
 (defn search-skills
   "Search skills using FTS5 full-text search.

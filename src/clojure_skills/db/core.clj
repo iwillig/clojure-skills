@@ -1,7 +1,6 @@
 (ns clojure-skills.db.core
   "Database connection management and operations."
-  (:require [next.jdbc :as jdbc]
-            [clojure-skills.config :as config]
+  (:require [clojure-skills.config :as config]
             [clojure-skills.db.schema :as schema]))
 
 (defn get-db

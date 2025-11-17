@@ -1,10 +1,13 @@
 # Agent Guide for Clojure Skills
 
-This document provides guidance for LLM agents working with the **clojure-skills** repository. Following these guidelines will help you be more effective when assisting with this codebase.
+This document provides guidance for LLM agents working with the
+**clojure-skills** repository. Following these guidelines will help
+you be more effective when assisting with this codebase.
 
 ## Important Guidelines for Agents
 
-**DO NOT USE EMOJIS** - Never use emojis in code, documentation, commit messages, or any output. Use clear, professional text instead.
+**DO NOT USE EMOJIS** - Never use emojis in code, documentation,
+commit messages, or any output. Use clear, professional text instead.
 
 ## Table of Contents
 
@@ -20,7 +23,10 @@ This document provides guidance for LLM agents working with the **clojure-skills
 
 ## Project Overview
 
-**Clojure Skills** is a collection of system prompt fragments designed to make working with Clojure in [OpenCode](https://opencode.ai/) more effective. The project consists of modular skills and prompts that can be mixed and composed to create effective coding agents.
+**Clojure Skills** is a collection of system prompt fragments designed
+to make working with Clojure in [OpenCode](https://opencode.ai/) more
+effective. The project consists of modular skills and prompts that can
+be mixed and composed to create effective coding agents.
 
 ### Purpose
 

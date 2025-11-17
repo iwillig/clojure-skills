@@ -11,7 +11,13 @@ skills:
 
   # CLI and terminal
   - skills/libraries/cli/cli_matic.md
-  - skills/libraries/terminal/bling.md
+#  - skills/libraries/terminal/bling.md
+
+  - skills/tooling/hashp.md
+
+  # Datastar
+#  - skills/libraries/frontend/datastar_clojure_sdk.md
+#  - skills/libraries/frontend/datastar.md
 
   # HTTP client
   - skills/http_servers/http_kit.md
@@ -19,25 +25,23 @@ skills:
   # Data formats and parsing
   - skills/libraries/data_formats/data_json.md
   - skills/libraries/data_formats/clj_yaml.md
-  - skills/libraries/data_formats/pretty.md
 
   # Data structures
-  - skills/libraries/data_structures/editscript.md
+
+#  - skills/libraries/rest_api/bidi.md
+#  - skills/libraries/rest_api/liberator.md
 
   # Schema validation
   - skills/libraries/data_validation/malli.md
+  # Logging
   - skills/libraries/logging/mulog.md
 
   # Testing
-  - skills/testing/clojure_test.md
-  - skills/testing/kaocha.md
-  - skills/testing/matcher_combinators.md
-  - skills/testing/test_chuck.md
-  - skills/testing/scope_capture.md
+#  - skills/testing/clojure_test.md
+#  - skills/testing/kaocha.md
+#  - skills/testing/matcher_combinators.md
 
   # Development tools
-  - skills/tooling/clj_kondo.md
-  - skills/tooling/cljstyle.md
-  - skills/tooling/clj_reload.md
-  - skills/tooling/nrepl.md
-  - skills/tooling/uberdeps.md
+
+  - skills/tooling/clojure_lsp_api.md
+#  - skills/testing/etaoin.md

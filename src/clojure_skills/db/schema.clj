@@ -2,8 +2,7 @@
   "Database schema definitions for clojure-skills.
   
   Uses SQLite with FTS5 for full-text search."
-  (:require [next.jdbc :as jdbc]
-            [honey.sql :as sql]))
+  (:require [next.jdbc :as jdbc]))
 
 (def schema-version 1)
 

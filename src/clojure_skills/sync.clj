@@ -5,10 +5,10 @@
             [clj-yaml.core :as yaml]
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as sql]
-            [clojure-skills.config :as config])
+            [clojure-skills.config :as config]
+            [clojure-skills.db.core])
   (:import [java.security MessageDigest]
-           [java.nio.file Files Paths]
-           [java.nio.file.attribute BasicFileAttributes]))
+           [java.io File]))
 
 (defn compute-hash
   "Compute SHA-256 hash of file content."
@@ -71,9 +71,9 @@
   (let [dir (io/file skills-dir)]
     (when (.exists dir)
       (->> (file-seq dir)
-           (filter #(and (.isFile %)
-                         (str/ends-with? (.getName %) ".md")))
-           (map #(str (.getPath %)))
+           (filter #(and (.isFile ^File %)
+                         (str/ends-with? (.getName ^File %) ".md")))
+           (map #(str (.getPath ^File %)))
            (sort)))))
 
 (defn scan-prompt-files
@@ -83,15 +83,15 @@
     (when (.exists dir)
       (->> (file-seq dir)
            (filter #(and (.isFile %)
-                         (str/ends-with? (.getName %) ".md")))
-           (map #(str (.getPath %)))
+                         (str/ends-with? (.getName ^File %) ".md")))
+           (map #(str (.getPath ^File %)))
            (sort)))))
 
 (defn parse-skill-file
   "Parse a skill markdown file and extract metadata."
   [path]
   (let [content (slurp path)
-        [frontmatter content-without-frontmatter] (extract-frontmatter content)
+        [frontmatter _content-without-frontmatter] (extract-frontmatter content)
         {:keys [category name]} (parse-skill-path path)
         file-hash (compute-hash content)
         size-bytes (.length (io/file path))
@@ -110,7 +110,7 @@
   "Parse a prompt markdown file and extract metadata."
   [path]
   (let [content (slurp path)
-        [frontmatter content-without-frontmatter] (extract-frontmatter content)
+        [frontmatter _content-without-frontmatter] (extract-frontmatter content)
         filename (last (str/split path #"/"))
         name (str/replace filename #"\.md$" "")
         file-hash (compute-hash content)

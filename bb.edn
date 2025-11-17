@@ -159,6 +159,7 @@
            ;; Build clojure_build
            (shell "bb build clojure_build")
            (shell "bb build shortcut_cli_builder")
+           (shell "bb build software_alchemist_build")
 
            (success-msg "All builds complete!"))}
 
@@ -293,7 +294,7 @@
                  (error-msg "Compilation failed")
                  (System/exit 1)))))}
 
-  uberjar
+  build-uberjar
   {:doc "Build uberjar (requires compile first)"
    :task (do
            (info-msg "Building uberjar...")
@@ -355,7 +356,7 @@
    :task (do
            (run 'clean)
            (run 'compile)
-           (run 'uberjar)
+           (run 'build-uberjar)
            (run 'native)
            (success-msg "Build complete! Native binary at: target/clojure-skills"))}
 

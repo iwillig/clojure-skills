@@ -1,15 +1,17 @@
 (ns clojure-skills.cli
   "CLI interface for clojure-skills."
   (:require [cli-matic.core :as cli]
-            [clojure.pprint :as pprint]
             [clojure.string :as str]
             [bling.core :as bling]
             [clj-commons.format.table :as table]
+            [jsonista.core :as json]
             [clojure-skills.config :as config]
             [clojure-skills.db.core :as db]
             [clojure-skills.db.schema :as schema]
             [clojure-skills.sync :as sync]
             [clojure-skills.search :as search]))
+
+(set! *warn-on-reflection* true)
 
 ;;; Utility functions for output formatting
 
@@ -51,7 +53,7 @@
 
 (defn cmd-init
   "Initialize the database."
-  [opts]
+  [_opts]
   (try
     (config/init-config)
     (let [config (config/load-config)
@@ -65,7 +67,7 @@
 
 (defn cmd-sync
   "Sync skills and prompts to database."
-  [opts]
+  [_opts]
   (try
     (let [config (config/load-config)
           db (db/get-db config)]
@@ -78,7 +80,7 @@
 
 (defn cmd-search
   "Search skills and prompts."
-  [{:keys [_arguments category type max-results] :as opts}]
+  [{:keys [_arguments category type max-results]}]
   (try
     (let [query (first _arguments)]
       (when (or (nil? query) (str/blank? query))
@@ -159,7 +161,7 @@
 
 (defn cmd-list-prompts
   "List all prompts."
-  [opts]
+  [_opts]
   (try
     (let [config (config/load-config)
           db (db/get-db config)
@@ -179,7 +181,7 @@
 
 (defn cmd-stats
   "Show database statistics."
-  [opts]
+  [_opts]
   (try
     (let [config (config/load-config)
           db (db/get-db config)
@@ -220,6 +222,28 @@
       (catch Exception e
         (print-error (str "Reset failed: " (.getMessage e)))
         (System/exit 1)))))
+
+(defn cmd-show-skill
+  "Show full content of a skill as JSON."
+  [{:keys [category _arguments]}]
+  (try
+    (let [skill-name (first _arguments)]
+      (when (or (nil? skill-name) (str/blank? skill-name))
+        (print-error "Skill name cannot be empty")
+        (System/exit 1))
+      (let [config (config/load-config)
+            db (db/get-db config)
+            skill (search/get-skill-by-name db skill-name :category category)]
+        (if skill
+          (println (json/write-value-as-string skill
+                                               (json/object-mapper {:pretty true})))
+          (do
+            (print-error (str "Skill not found: " skill-name
+                              (when category (str " in category " category))))
+            (System/exit 1)))))
+    (catch Exception e
+      (print-error (str "Failed to show skill: " (.getMessage e)))
+      (System/exit 1))))
 
 ;;; CLI configuration
 
@@ -282,7 +306,19 @@
              :as "Force reset without confirmation"
              :type :with-flag
              :default false}]
-     :runs cmd-reset-db}]})
+     :runs cmd-reset-db}
+
+    {:command "show-skill"
+     :description "Show full content of a skill as JSON"
+     :opts [{:option "category"
+             :short "c"
+             :as "Filter by category"
+             :type :string}]
+     :args [{:arg "name"
+             :as "Skill name"
+             :type :string
+             :required true}]
+     :runs cmd-show-skill}]})
 
 (defn run-cli
   "Run the CLI with the given arguments."

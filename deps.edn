@@ -3,6 +3,7 @@
   metosin/malli {:mvn/version "0.19.2"}
   cli-matic/cli-matic {:mvn/version "0.5.4"}
   org.clojure/data.json {:mvn/version "2.5.1"}
+  metosin/jsonista {:mvn/version "0.3.11"}
   http-kit/http-kit {:mvn/version "2.8.1"}
   hiccup/hiccup {:mvn/version "2.0.0"}
   funcool/lentes {:mvn/version "1.3.3"}
