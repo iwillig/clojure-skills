@@ -2,7 +2,9 @@
   "Tests for configuration loading and command filtering."
   (:require
    [clojure.test :refer [deftest testing is]]
-   [clojure-skills.config :as config]))
+   [clojure-skills.config :as config]
+   [clojure.java.io :as io]
+   [clojure.edn :as edn]))
 
 (deftest command-filtering-test
   (testing "Command filtering with permissions"
@@ -183,3 +185,55 @@
                          (filter #(= "skill" (:command %)))
                          first
                          :subcommands))))))))
+
+(deftest project-root-detection-test
+  (testing "Finding project root with markers"
+    ;; Test that we can detect common project markers
+    (let [current-dir (.getAbsolutePath (java.io.File. "."))]
+      ;; Since we're running from the project root, we should find it
+      (is (= current-dir (config/find-project-root))))))
+
+(deftest project-config-loading-test
+  (testing "Loading project configuration"
+    ;; Create a temporary project config for testing
+    (let [temp-dir (System/getProperty "java.io.tmpdir")
+          project-dir (str temp-dir "/test-project-" (System/currentTimeMillis))
+          config-dir (str project-dir "/.clojure-skills")
+          config-file (str config-dir "/config.edn")
+          test-config {:test-value "project-test"}]
+
+      ;; Create test directory structure
+      (.mkdirs (io/file config-dir))
+
+      ;; Write test config
+      (spit config-file (pr-str test-config))
+
+      ;; Test loading config from project
+      (with-redefs [config/find-project-root (fn [] project-dir)]
+        (let [loaded-config (config/load-project-config)]
+          (is (= test-config loaded-config))))
+
+      ;; Clean up
+      (io/delete-file config-file)
+      (io/delete-file config-dir)
+      (io/delete-file project-dir))))
+
+(deftest config-priority-test
+  (testing "Configuration loading priority"
+    ;; Test that environment variables override project config
+    (let [original-db-path (System/getenv "CLOJURE_SKILLS_DB_PATH")
+          test-db-path "/tmp/test-db-from-env.db"]
+
+      ;; Temporarily set environment variable
+      (with-redefs [config/get-env-overrides (fn [] {:database {:path test-db-path}})]
+        (let [test-project-config {:database {:path "/tmp/test-db-from-project.db"}}
+              test-global-config {:database {:path "/tmp/test-db-from-global.db"}}]
+
+          ;; Mock the config loading functions
+          (with-redefs [config/load-config-file (fn [] test-global-config)
+                        config/load-project-config (fn [] test-project-config)
+                        config/default-config {:database {:path "/tmp/test-db-default.db" :auto-migrate true}}]
+
+            (let [final-config (config/load-config)]
+              ;; Environment variable should win
+              (is (= test-db-path (get-in final-config [:database :path]))))))))))

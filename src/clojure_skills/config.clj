@@ -1,10 +1,11 @@
 (ns clojure-skills.config
-  "Configuration management with XDG Base Directory compliance.
-  
+  "Configuration management with XDG Base Directory compliance and project-specific overrides.
+
   Configuration priority:
   1. Environment variables
-  2. ~/.config/clojure-skills/config.edn
-  3. Built-in defaults"
+  2. Project config (.clojure-skills/config.edn)
+  3. ~/.config/clojure-skills/config.edn
+  4. Built-in defaults"
   (:require
    [clojure-skills.logging :as log]
    [clojure.edn :as edn]
@@ -36,6 +37,53 @@
     (str/replace-first path "~" (get-home-dir))
     path))
 
+(defn find-project-root
+  "Find the project root directory by walking up from the current directory
+  looking for project markers. Returns the path to the project root or nil
+  if no project markers are found."
+  ([]
+   (find-project-root (.getAbsolutePath (java.io.File. "."))))
+  ([current-path]
+   (let [markers [".clojure-skills" "deps.edn" ".git"]]
+     (loop [path (io/file current-path)]
+       (when path
+         (let [files (set (map #(.getName %) (.listFiles path)))]
+           (if (some files markers)
+             (.getAbsolutePath path)
+             (recur (.getParentFile path)))))))))
+
+(defn get-project-config-file-path
+  "Get path to project config file if within a project."
+  []
+  (when-let [project-root (find-project-root)]
+    (str project-root "/.clojure-skills/config.edn")))
+
+(defn load-project-config
+  "Load project configuration from file if it exists."
+  []
+  (let [config-path (get-project-config-file-path)]
+    (when (and config-path (.exists (io/file config-path)))
+      (try
+        (edn/read-string (slurp config-path))
+        (catch Exception e
+          (log/log-warning "Failed to load project config file" :path config-path :error (.getMessage e))
+          nil)))))
+
+(defn ensure-project-config-dir
+  "Ensure project config directory exists."
+  []
+  (when-let [project-root (find-project-root)]
+    (let [config-dir (str project-root "/.clojure-skills")]
+      (when-not (.exists (io/file config-dir))
+        (.mkdirs (io/file config-dir))))))
+
+(defn save-project-config
+  "Save configuration to project config file."
+  [config]
+  (ensure-project-config-dir)
+  (when-let [config-path (get-project-config-file-path)]
+    (spit config-path (pr-str config))))
+
 (def default-config
   "Default configuration values."
   {:database
@@ -57,7 +105,7 @@
     :color true}
 
    :permissions
-   {}})
+   {:plan false}})
 
 (defn get-config-file-path
   "Get path to config.edn file."
@@ -98,12 +146,14 @@
 (defn load-config
   "Load configuration with priority:
    1. Environment variables
-   2. Config file
-   3. Defaults"
+   2. Project config (.clojure-skills/config.edn)
+   3. ~/.config/clojure-skills/config.edn
+   4. Built-in defaults"
   []
   (let [file-config (load-config-file)
+        project-config (load-project-config)
         env-config (get-env-overrides)]
-    (deep-merge default-config file-config env-config)))
+    (deep-merge default-config file-config project-config env-config)))
 
 (defn get-db-path
   "Get database path with expansion."
@@ -127,9 +177,9 @@
   "Check if a command is enabled based on permissions configuration.
    Permissions is a nested map where false means disabled and true/missing means enabled.
    Path is a vector of keywords representing the command hierarchy.
-   
+
    Supports both top-level disabling (e.g., {:plan false}) and nested disabling (e.g., {:plan {:delete false}})
-   
+
    Example permissions structure:
    {:db {:reset false :init true}
     :plan false  ; Disables entire plan command tree

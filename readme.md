@@ -1,8 +1,22 @@
 # Clojure Skills
 
-A searchable knowledge base of Clojure development skills with a powerful CLI for finding, viewing, and managing reusable prompt fragments for AI coding agents.
+A searchable knowledge base of Clojure development skills with a
+powerful CLI for finding, viewing, and managing reusable prompt
+fragments for AI coding agents.
+
+**Warning** This project is using itself, and therefor is more "vibe"
+coded then it should be. I need a test bed for the project and as a
+result some things are messy. Contributions welcome!
+
+**Note** Note this project requires
+[clojure-mcp](https://github.com/bhauman/clojure-mcp) to be
+installed. The prompts are depdent on the clojure mcp system. We
+should clean this up.
+
+https://github.com/bhauman/clojure-mcp?tab=readme-ov-file#for-depsedn-projects
 
 **Quick Links:**
+
 - [Installation](#installation) - Get started in 5 minutes
 - [CLI Usage](#cli-usage) - Search and explore 73+ skills
 - [For LLM Agents](AGENTS.md) - Comprehensive agent guide
@@ -12,16 +26,21 @@ A searchable knowledge base of Clojure development skills with a powerful CLI fo
 
 ## What Is This?
 
-**Clojure Skills** is a curated collection of 75 skills covering Clojure development, organized in a SQLite database with full-text search. Each skill is a focused markdown document teaching a specific topic:
+**Clojure Skills** is a curated collection of 75 skills covering
+Clojure development, organized in a SQLite database with full-text
+search. Each skill is a focused markdown document teaching a specific
+topic:
 
 - **Language fundamentals** - Clojure intro, REPL-driven development
 - **Libraries** (50+) - Malli, next.jdbc, http-kit, Ring, Kaocha, and more
 - **Testing frameworks** - Kaocha, test.check, scope-capture
 - **Development tools** - clj-kondo, CIDER, nRepl, Babashka
 
-Skills can be searched, viewed individually, or composed together into complete teaching prompts for AI agents.
+Skills can be searched, viewed individually, or composed together into
+complete teaching prompts for AI agents.
 
 **Core features:**
+
 - Full-text search with SQLite FTS5
 - 75 skills across 29 categories
 - CLI tool for instant access
@@ -31,6 +50,66 @@ Skills can be searched, viewed individually, or composed together into complete 
 ---
 
 ## Installation
+
+Right now you have to build this locally. You will need GraalVM,
+clojure and Babashka. You can install those on MacOS using the
+following command,
+
+
+```bash
+brew install clojure babashka pandoc yq typos-cli
+```
+
+
+To manage your GraalVM, we encourage people to use [SdkMan](https://sdkman.io/)
+
+If you are using SdkMan, you can set the correct JVM with the following command.
+
+```bash
+sdk env
+```
+
+## Development
+
+Development tasks are driven by Babashka.
+
+You can see all of the development tasks
+
+```bash
+bb tasks
+```
+
+## Agentic Coding
+
+Included in this project is an [OpenCode](https://opencode.ai/)
+configuration file. You can use this to configure the project for your
+agentic editor. You will need to
+
+```bash
+bb nrepl
+```
+
+Next, lets build all of the prompts. This is a legacy command and will
+be removed soon.
+
+```bash
+bb build-all
+```
+
+You can now start opencode from the project home,
+
+```
+opencode
+```
+
+You should be able to tab into the clojure-build or the
+clojure-skill-builder agent. These are custom agents that are designed
+to work effectively with the clojure programming language.
+
+The clojure-skill-builder is designed to build a Skill and test its
+skill with the REPl. This makes adding a skill a one shot operation.
+
+
 
 ### Prerequisites
 
@@ -240,13 +319,15 @@ Add a `:permissions` section to your `~/.config/clojure-skills/config.edn` file:
 ```edn
 {:permissions
  {:db {:reset false}
-  :plan {:delete false}}}
+  :plan true}}  ; Enable the plan command tree (disabled by default)
 ```
 
 In this example:
 - `clojure-skills db reset` will be completely hidden from the CLI
-- `clojure-skills plan delete` will be completely hidden from the CLI
+- `clojure-skills plan` command tree will be enabled (it's disabled by default)
 - All other commands remain available
+
+**Note:** By default, the entire `plan` command tree is disabled. To enable it, you need to explicitly set `:plan true` or remove the restriction.
 
 **Permission rules:**
 - Commands are identified by their full path (e.g., `:db :reset`)
@@ -286,7 +367,6 @@ Using top-level disabling for simpler configuration:
 ```edn
 {:permissions
  {:db {:reset false}
-  :plan false
   :task-list {:delete false}
   :task {:delete false}}}
 ```
@@ -296,10 +376,11 @@ Or using entirely top-level disabling:
 ```edn
 {:permissions
  {:db {:reset false}
-  :plan false
   :task-list false
   :task false}}
 ```
+
+**Note:** The `plan` command tree is disabled by default. To enable it, add `:plan true` to your permissions configuration.
 
 **Applying configuration:**
 
@@ -307,7 +388,7 @@ Or using entirely top-level disabling:
    ```bash
    # Create config if it doesn't exist
    clojure-skills db init
-   
+
    # Edit the config file
    nano ~/.config/clojure-skills/config.edn
    ```

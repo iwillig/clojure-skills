@@ -1637,6 +1637,12 @@ This helps both you and humans understand progress across sessions.
 - **Review associated skills before starting each work session** - This ensures you have the necessary knowledge fresh in context
 - **Add skills as you discover new requirements** - If you need additional skills during implementation, associate them with the plan
 
+**Content Guidelines for Plans:**
+- **DO NOT include TODO lists in plan content** - Use the task tracking system instead
+- **Focus on implementation strategy and design decisions** in plan content
+- **Use task lists and tasks for tracking progress** on specific implementation steps
+- **Keep plan content focused on the overall approach** rather than granular steps
+
 ### When Asked to Add a Skill
 
 1. Check existing skills with `bb list-skills` to avoid duplication
