@@ -364,9 +364,9 @@ clojure-skills plan skill list 1
 clojure-skills plan skill dissociate 1 "cli_matic"
 
 # Plan results
-clojure-skills plan result create 1 --summary "Implementation complete" --content "# Results\nImplementation was successful" --status "completed"
+clojure-skills plan result create 1 --outcome "success" --summary "Implementation complete"
 clojure-skills plan result show 1
-clojure-skills plan result update 1 --summary "Implementation complete with minor issues" --status "completed"
+clojure-skills plan result update 1 --summary "Implementation complete with minor issues"
 clojure-skills plan result search "database"
 ```
 
@@ -1043,10 +1043,10 @@ Complete reference for all task tracking commands:
 | `task show` | `<TASK-ID>` | None | None | Show detailed task information |
 | `task complete` | `<TASK-ID>` | None | None | Mark task as completed |
 | `task delete` | `<TASK-ID>` | `--force` | None | Delete a single task |
-| `plan result create` | `<PLAN-ID>` | None | `--content`, `--summary`, `--status` | Create a result for a completed plan |
+| `plan result create` | `<PLAN-ID>` | None | `--outcome`, `--summary`, `--challenges`, `--solutions`, `--lessons-learned`, `--metrics` | Create a result for a completed plan |
 | `plan result show` | `<PLAN-ID>` | None | None | Show plan result |
-| `plan result update` | `<PLAN-ID>` | None | `--content`, `--summary`, `--status` | Update a plan result |
-| `plan result search` | `<SEARCH-TERM>` | `--max-results N` | None | Search plan results |
+| `plan result update` | `<PLAN-ID>` | None | `--outcome`, `--summary`, `--challenges`, `--solutions`, `--lessons-learned`, `--metrics` | Update a plan result |
+| `plan result search` | `<SEARCH-TERM>` | None | `--max-results` | Search plan results |
 
 **Argument Types:**
 - `<ID>` - Numeric ID (integer)
@@ -1161,6 +1161,140 @@ clojure-skills skill show "honeysql" | jq -r '.content'
 # 5. If a skill is no longer needed:
 clojure-skills plan skill dissociate 5 "ragtime"
 ```
+
+#### Recording Plan Results
+
+**Why record plan results?**
+After completing a plan, you can record the outcome and learnings to:
+- Document what was actually implemented
+- Track challenges encountered and solutions found
+- Capture lessons learned for future similar work
+- Record quantitative metrics about the implementation
+- Make implementation knowledge searchable for future reference
+
+**Create a plan result:**
+```bash
+clojure-skills plan result create <PLAN-ID> \
+  [--outcome "success|failure|partial"] \
+  [--summary "Brief outcome summary"] \
+  [--challenges "What was difficult"] \
+  [--solutions "How challenges were solved"] \
+  [--lessons-learned "What was learned"] \
+  [--metrics "JSON string with metrics"]
+```
+
+**Arguments:**
+- `<PLAN-ID>` (REQUIRED, positional) - Numeric plan ID
+- `--outcome` (optional) - Overall outcome: "success", "failure", or "partial"
+- `--summary` (optional) - Brief summary of the outcome (max 1000 chars, searchable)
+- `--challenges` (optional) - Challenges encountered during implementation (searchable)
+- `--solutions` (optional) - How challenges were addressed (searchable)
+- `--lessons-learned` (optional) - Key learnings from the implementation (searchable)
+- `--metrics` (optional) - JSON string with quantitative data (e.g., performance metrics)
+
+**Example:**
+```bash
+clojure-skills plan result create 5 \
+  --outcome "success" \
+  --summary "Successfully refactored database layer with improved performance" \
+  --challenges "HoneySQL migration was complex due to dynamic query generation" \
+  --solutions "Created helper functions for common query patterns" \
+  --lessons-learned "Always test HoneySQL queries with :format before executing" \
+  --metrics '{"queries_refactored": 47, "performance_improvement": "40%", "lines_of_code_reduced": 230}'
+```
+
+**Show a plan result:**
+```bash
+clojure-skills plan result show <PLAN-ID>
+```
+
+**Arguments:**
+- `<PLAN-ID>` (REQUIRED, positional) - Numeric plan ID
+
+**Example:**
+```bash
+clojure-skills plan result show 5
+```
+
+This displays all recorded result information including outcome, summary, challenges, solutions, lessons learned, and metrics.
+
+**Update a plan result:**
+```bash
+clojure-skills plan result update <PLAN-ID> \
+  [--outcome "new-outcome"] \
+  [--summary "new-summary"] \
+  [--challenges "updated-challenges"] \
+  [--solutions "updated-solutions"] \
+  [--lessons-learned "updated-lessons"] \
+  [--metrics "updated-metrics-json"]
+```
+
+**Arguments:**
+- `<PLAN-ID>` (REQUIRED, positional) - Numeric plan ID
+- All other arguments are optional and update the corresponding field
+
+**Example:**
+```bash
+clojure-skills plan result update 5 \
+  --summary "Successfully refactored database layer with 50% performance improvement" \
+  --metrics '{"queries_refactored": 52, "performance_improvement": "50%", "lines_of_code_reduced": 280}'
+```
+
+**Search plan results:**
+```bash
+clojure-skills plan result search <SEARCH-TERM> [--max-results N]
+```
+
+**Arguments:**
+- `<SEARCH-TERM>` (REQUIRED, positional) - Text to search for in results
+- `--max-results` (optional) - Maximum number of results to return (default: 50)
+
+**Example:**
+```bash
+# Find all results mentioning HoneySQL
+clojure-skills plan result search "HoneySQL"
+
+# Find results about performance
+clojure-skills plan result search "performance" --max-results 10
+```
+
+**Plan Result Commands Reference:**
+
+| Command | Positional Args | Required Options | Optional Options | Description |
+|---------|----------------|------------------|------------------|-------------|
+| `plan result create` | `<PLAN-ID>` | None | `--outcome`, `--summary`, `--challenges`, `--solutions`, `--lessons-learned`, `--metrics` | Create a result for a completed plan |
+| `plan result show` | `<PLAN-ID>` | None | None | Show plan result details |
+| `plan result update` | `<PLAN-ID>` | None | `--outcome`, `--summary`, `--challenges`, `--solutions`, `--lessons-learned`, `--metrics` | Update a plan result |
+| `plan result search` | `<SEARCH-TERM>` | None | `--max-results` | Search plan results using FTS5 |
+
+**Workflow Example:**
+```bash
+# 1. Complete a plan
+clojure-skills plan complete 5
+
+# 2. Record the outcome and learnings
+clojure-skills plan result create 5 \
+  --outcome "success" \
+  --summary "Database layer fully refactored with HoneySQL" \
+  --challenges "Complex JOIN queries required careful HoneySQL composition. Dynamic query building needed extensive testing." \
+  --solutions "Created query-builder helper functions. Added comprehensive test suite for query generation." \
+  --lessons-learned "HoneySQL :where clauses can be composed with helper functions. Always use :format option to preview SQL." \
+  --metrics '{"tests_added": 45, "coverage": "95%", "query_performance": "+40%"}'
+
+# 3. View the recorded result
+clojure-skills plan result show 5
+
+# 4. Later, search for this knowledge
+clojure-skills plan result search "HoneySQL dynamic queries"
+clojure-skills plan result search "query builder patterns"
+```
+
+**Best Practices for Recording Results:**
+- **Record results immediately after completion** - Details are fresh in memory
+- **Be specific in challenges and solutions** - Future implementations will benefit from details
+- **Include quantitative metrics** - Numbers make outcomes measurable and comparable
+- **Focus on learnings that transfer** - What would help someone doing similar work?
+- **Use searchable keywords** - Think about what future searches would find this useful
 
 ### When to Use Task Tracking
 
