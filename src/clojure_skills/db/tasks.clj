@@ -68,18 +68,23 @@
   (let [fields (select-keys update-map [:name :description :position])]
     (when (seq fields)
       (-> (helpers/update :task_lists)
-          (helpers/set (vec (mapcat identity fields)))
+          (helpers/set fields)
           (where [:= :id id])
-          (sql/format {:returning [:*]})
-          (->> (jdbc/execute-one! db))))))
+          (sql/format)
+          (->> (jdbc/execute-one! db)))
+      ;; Fetch and return the updated task list
+      (get-task-list-by-id db id))))
 
 (defn delete-task-list
   "Delete a task list by ID."
   [db id]
-  (-> (helpers/delete-from :task_lists)
-      (where [:= :id id])
-      (sql/format {:returning [:*]})
-      (->> (jdbc/execute-one! db))))
+  ;; Fetch the task list before deleting
+  (let [task-list (get-task-list-by-id db id)]
+    (-> (helpers/delete-from :task_lists)
+        (where [:= :id id])
+        (sql/format)
+        (->> (jdbc/execute-one! db)))
+    task-list))
 
 (defn reorder-task-lists
   "Reorder task lists by updating their positions."
@@ -165,18 +170,23 @@
   (let [fields (select-keys update-map [:name :description :completed :position :assigned_to])]
     (when (seq fields)
       (-> (helpers/update :tasks)
-          (helpers/set (vec (mapcat identity fields)))
+          (helpers/set fields)
           (where [:= :id id])
-          (sql/format {:returning [:*]})
-          (->> (jdbc/execute-one! db))))))
+          (sql/format)
+          (->> (jdbc/execute-one! db)))
+      ;; Fetch and return the updated task
+      (get-task-by-id db id))))
 
 (defn delete-task
   "Delete a task by ID."
   [db id]
-  (-> (helpers/delete-from :tasks)
-      (where [:= :id id])
-      (sql/format {:returning [:*]})
-      (->> (jdbc/execute-one! db))))
+  ;; Fetch the task before deleting
+  (let [task (get-task-by-id db id)]
+    (-> (helpers/delete-from :tasks)
+        (where [:= :id id])
+        (sql/format)
+        (->> (jdbc/execute-one! db)))
+    task))
 
 (defn complete-task
   "Mark a task as completed."
@@ -185,8 +195,10 @@
       (helpers/set {:completed 1
                     :completed_at [:datetime "now"]})
       (where [:= :id id])
-      (sql/format {:returning [:*]})
-      (->> (jdbc/execute-one! db))))
+      (sql/format)
+      (->> (jdbc/execute-one! db)))
+  ;; Fetch and return the updated task
+  (get-task-by-id db id))
 
 (defn uncomplete-task
   "Mark a task as not completed."
@@ -195,8 +207,10 @@
       (helpers/set {:completed 0
                     :completed_at nil})
       (where [:= :id id])
-      (sql/format {:returning [:*]})
-      (->> (jdbc/execute-one! db))))
+      (sql/format)
+      (->> (jdbc/execute-one! db)))
+  ;; Fetch and return the updated task
+  (get-task-by-id db id))
 
 (defn reorder-tasks
   "Reorder tasks by updating their positions."
