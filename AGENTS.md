@@ -96,19 +96,25 @@ As an LLM agent working with this codebase, you have access to powerful MCP tool
 **Quick commands:**
 ```bash
 # Search for skills by topic
-clojure-skills search "database queries"
-clojure-skills search "validation" -t skills
+clojure-skills skill search "database queries"
+clojure-skills skill search "validation"
 
 # List all skills by category
-clojure-skills list-skills
-clojure-skills list-skills -c libraries/database
+clojure-skills skill list
+clojure-skills skill list -c libraries/database
 
-# View detailed skill content
-clojure-skills show-skill "malli"
-clojure-skills show-skill "next_jdbc" -c libraries/database
+# View detailed skill content (outputs JSON)
+clojure-skills skill show "malli"
+clojure-skills skill show "next_jdbc"
 
-# Get statistics
-clojure-skills stats
+# Search prompts
+clojure-skills prompt search "agent"
+clojure-skills prompt list
+
+# Database operations
+clojure-skills db init
+clojure-skills db sync
+clojure-skills db stats
 ```
 
 **When to use:**
@@ -122,10 +128,10 @@ clojure-skills stats
 
 ```bash
 # 1. Find relevant skills
-clojure-skills search "HTTP server" -t skills
+clojure-skills skill search "HTTP server"
 
 # 2. View detailed content
-clojure-skills show-skill "http_kit"
+clojure-skills skill show "http_kit"
 
 # 3. Use knowledge in your code
 # (Now you know http-kit patterns to test in clojure_eval)
@@ -226,7 +232,7 @@ clojure-skills/
 | **deps.edn** | Dependency management | [Deps and CLI Guide](https://clojure.org/guides/deps_and_cli) |
 | **Kaocha** | Test runner | [github.com/lambdaisland/kaocha](https://github.com/lambdaisland/kaocha) |
 | **SQLite** | Skills database with FTS5 search | [sqlite.org](https://sqlite.org) |
-| **clojure-skills CLI** | Skill search and management | See "Essential Tools" section |
+| **clojure-skills CLI** | Skill search and management with hierarchical subcommands | See "Essential Tools" section |
 
 ### Development Tools
 
@@ -298,29 +304,31 @@ The CLI provides searchable access to the skills database and task tracking.
 
 ```bash
 # Initialize database (first time only)
-clojure-skills init
+clojure-skills db init
 
 # Search for skills
-clojure-skills search "http server"
-clojure-skills search "validation" -t skills
-clojure-skills search "malli" -c libraries/data_validation
+clojure-skills skill search "http server"
+clojure-skills skill search "validation"
+clojure-skills skill search "malli" -c libraries/data_validation
 
 # List skills
-clojure-skills list-skills                          # All skills
-clojure-skills list-skills -c libraries/database    # By category
+clojure-skills skill list                          # All skills
+clojure-skills skill list -c libraries/database    # By category
 
 # View skill details (outputs JSON)
-clojure-skills show-skill "malli"
-clojure-skills show-skill "next_jdbc" | jq -r '.content'
+clojure-skills skill show "malli"
+clojure-skills skill show "next_jdbc"
 
-# Database statistics
-clojure-skills stats
+# Search prompts
+clojure-skills prompt search "agent"
+clojure-skills prompt list
 
-# Sync skills from filesystem to database
-clojure-skills sync
+# Database operations
+clojure-skills db stats
+clojure-skills db sync
 
 # Reset database (destructive!)
-clojure-skills reset-db --force
+clojure-skills db reset --force
 ```
 
 #### Task Tracking Quick Reference
@@ -329,26 +337,31 @@ See the [Task Tracking System](#task-tracking-system) section for complete docum
 
 ```bash
 # Plans
-clojure-skills create-plan --name "feature-name" --title "Title"
-clojure-skills list-plans
-clojure-skills show-plan 1                  # By ID
-clojure-skills show-plan "feature-name"     # By name
-clojure-skills update-plan 1 --status "completed"
-clojure-skills complete-plan 1
+clojure-skills plan create --name "feature-name" --title "Title"
+clojure-skills plan list
+clojure-skills plan show 1                  # By ID
+clojure-skills plan show "feature-name"     # By name
+clojure-skills plan update 1 --status "completed"
+clojure-skills plan complete 1
 
 # Task Lists
-clojure-skills create-task-list 1 --name "Phase 1"    # 1 = plan ID
-clojure-skills show-task-list 1                       # Show task list details
+clojure-skills plan task-list create 1 --name "Phase 1"    # 1 = plan ID
+clojure-skills task-list show 1                            # Show task list details
 
 # Tasks
-clojure-skills create-task 1 --name "Task name"       # 1 = task list ID
-clojure-skills show-task 1                            # Show task details
-clojure-skills complete-task 1                        # 1 = task ID
+clojure-skills task-list task create 1 --name "Task name"  # 1 = task list ID
+clojure-skills task show 1                                 # Show task details
+clojure-skills task complete 1                             # 1 = task ID
 
 # Delete commands (all require --force flag)
-clojure-skills delete-plan 1 --force                  # Deletes plan + lists + tasks
-clojure-skills delete-task-list 1 --force             # Deletes list + tasks
-clojure-skills delete-task 1 --force                  # Deletes single task
+clojure-skills plan delete 1 --force                       # Deletes plan + lists + tasks
+clojure-skills task-list delete 1 --force                  # Deletes list + tasks
+clojure-skills task delete 1 --force                       # Deletes single task
+
+# Skill associations with plans
+clojure-skills plan skill associate 1 "cli_matic" --position 1
+clojure-skills plan skill list 1
+clojure-skills plan skill dissociate 1 "cli_matic"
 ```
 
 ### Running Tasks
@@ -805,7 +818,7 @@ bb build-compressed clojure_skill_builder --ratio 10
 
 ## Task Tracking System
 
-The clojure-skills CLI includes a task tracking system for managing complex, multi-step implementations. This is especially useful for collaborative work between LLM agents and humans.
+The clojure-skills CLI includes a task tracking system for managing complex, multi-step implementations with hierarchical subcommands. This is especially useful for collaborative work between LLM agents and humans.
 
 ### Core Concepts
 
@@ -1810,21 +1823,21 @@ This repository is designed for **modular, composable prompt engineering** for C
 - **Testability**: Code should be validated in REPL, then tested with Kaocha
 - **Quality**: Use linting, formatting, and spell checking
 - **Documentation**: Keep skills and prompts well-documented
-- **Searchability**: Use clojure-skills CLI to find relevant knowledge
+- **Searchability**: Use clojure-skills CLI with hierarchical subcommands to find relevant knowledge
 - **Task Tracking**: Use plans and tasks for complex implementations
 
 **Essential MCP Tools:**
 - **clojure_eval** - Your primary development tool (test everything here first!)
-- **clojure-skills CLI** - Search and access 70+ skills
+- **clojure-skills CLI** - Search and access 70+ skills with hierarchical subcommands
 - **clojure_edit** - Commit validated code to files
 - **clojure-mcp_read_file** - Explore codebases
 
 **Essential Commands:**
-- `clojure-skills search <topic>` - Find relevant skills
-- `clojure-skills show-skill <name>` - View detailed skill content
-- `clojure-skills create-plan` - Start tracking complex implementations
-- `clojure-skills associate-skill <plan-id> <skill>` - Link skills to plans
-- `clojure-skills list-plan-skills <plan-id>` - View plan's associated skills
+- `clojure-skills skill search <topic>` - Find relevant skills
+- `clojure-skills skill show <name>` - View detailed skill content
+- `clojure-skills plan create` - Start tracking complex implementations
+- `clojure-skills plan skill associate <plan-id> <skill>` - Link skills to plans
+- `clojure-skills plan skill list <plan-id>` - View plan's associated skills
 - `bb list-skills` - See all available skills with metadata
 - `bb build <name>` - Build a specific prompt
 - `bb ci` - Run full quality pipeline (fmt, lint, typos, test)

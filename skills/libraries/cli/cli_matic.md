@@ -51,12 +51,52 @@ cli-matic provides a data-driven approach to building command-line interfaces. D
   (run-cli args cli-definition))
 ```
 
+## Hierarchical Subcommands
+
+cli-matic supports hierarchical subcommands for organizing complex CLI applications:
+
+```clojure
+(def cli-definition
+  {:app-name "myapp"
+   :version "1.0.0"
+   :description "My CLI application"
+   :subcommands
+   [{:command "db"
+     :description "Database operations"
+     :subcommands
+     [{:command "init"
+       :description "Initialize database"
+       :runs init-db}
+      {:command "migrate"
+       :description "Run migrations"
+       :runs migrate-db}]}
+    {:command "user"
+     :description "User operations"
+     :subcommands
+     [{:command "create"
+       :description "Create user"
+       :opts [{:as "Name" :long "name" :required true}]
+       :runs create-user}
+      {:command "list"
+       :description "List users"
+       :runs list-users}]}]})
+```
+
+This creates a command structure like:
+```bash
+myapp db init
+myapp db migrate
+myapp user create --name "John"
+myapp user list
+```
+
 ## Key Features
 
 - Data-driven command definition
 - Automatic argument parsing
 - Help generation
 - Subcommand support
+- Hierarchical command structure
 - Validation of arguments
 - Type conversion
 - Exit codes
@@ -67,6 +107,7 @@ cli-matic provides a data-driven approach to building command-line interfaces. D
 - Command-line argument parsing
 - Multi-command applications
 - Tools with structured commands
+- Complex CLI hierarchies
 
 ## When NOT to Use
 
@@ -89,13 +130,24 @@ cli-matic provides a data-driven approach to building command-line interfaces. D
 (def cli-definition
   {:app-name "processor"
    :version "1.0.0"
-   :commands
+   :subcommands
    [{:command "process"
      :description "Process a file"
      :opts [{:as "Input file" :long "input" :required true}
             {:as "Output file" :long "output" :required true}
             {:as "Format" :long "format" :default "json"}]
-     :runs process-file}]})
+     :runs process-file}
+    {:command "config"
+     :description "Configuration operations"
+     :subcommands
+     [{:command "show"
+       :description "Show current configuration"
+       :runs show-config}
+      {:command "set"
+       :description "Set configuration value"
+       :opts [{:as "Key" :long "key" :required true}
+              {:as "Value" :long "value" :required true}]
+       :runs set-config}]}]})
 
 (defn -main [& args]
   (run-cli args cli-definition))
@@ -113,4 +165,4 @@ cli-matic provides a data-driven approach to building command-line interfaces. D
 
 ## Notes
 
-This project uses cli-matic for building command-line interfaces.
+This project uses cli-matic for building command-line interfaces with hierarchical subcommands.
