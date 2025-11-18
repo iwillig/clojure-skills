@@ -1,0 +1,15 @@
+{:database {:path         "~/dev/clojure-skills/clojure-skills.db",
+            :auto-migrate true},
+ :project  {:root        nil,
+            :skills-dir  "skills",
+            :prompts-dir "prompts",
+            :build-dir   "_build"},
+
+ :permissions
+ {:plan      true
+  :task      true
+  :task-list true
+  :prompt    true}
+
+ :search {:max-results 50, :context-lines 3},
+ :output {:format :table, :color true}}
