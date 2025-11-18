@@ -277,7 +277,79 @@ clojure-skills dissociate-skill 5 "honeysql"
 - Makes it clear what context agents need
 - Tracks which skills were actually used
 
-### Workflow 7: Cleaning Up Completed Work
+### Workflow 7: Recording Plan Results
+
+When a plan is completed, record what happened to build institutional knowledge:
+
+```bash
+# 1. Complete the plan
+clojure-skills complete-plan 4
+
+# 2. Record the outcome and lessons learned
+clojure-skills plan result create 4 \
+  --outcome "success" \
+  --summary "Successfully implemented feature X with full test coverage" \
+  --challenges "Database schema design was more complex than expected" \
+  --solutions "Used iterative migration approach with Ragtime" \
+  --lessons-learned "Start with simple schema and iterate; test migrations early" \
+  --metrics '{"lines_changed": 500, "tests_added": 25, "files_modified": 8}'
+# Output: Created result for plan 4
+# Output: Result ID: 1
+
+# 3. View the result
+clojure-skills plan result show 4
+# Shows:
+# - Outcome (success/failure/partial)
+# - Summary
+# - Challenges encountered
+# - Solutions found
+# - Lessons learned
+# - Metrics (JSON)
+# - Timestamps
+
+# 4. Result is also shown in plan view
+clojure-skills show-plan 4
+# Includes Plan Result section between skills and tasks
+
+# 5. Update result with additional information
+clojure-skills plan result update 4 \
+  --metrics '{"lines_changed": 550, "tests_added": 28}' \
+  --lessons-learned "Also learned: involve QA earlier in process"
+
+# 6. Search results to find similar challenges
+clojure-skills plan result search "database schema"
+# Returns all results mentioning "database schema" with snippets
+# Searches across: summary, challenges, solutions, lessons_learned
+
+clojure-skills plan result search "migration" --max-results 10
+```
+
+**Plan result fields:**
+
+**Required:**
+- `--outcome` - Result outcome: `success`, `failure`, or `partial`
+- `--summary` - Brief summary (max 1000 chars, searchable)
+
+**Optional (all searchable):**
+- `--challenges` - What was difficult
+- `--solutions` - How challenges were solved
+- `--lessons-learned` - What was learned
+- `--metrics` - JSON string with quantitative data
+
+**Why record results:**
+- Build institutional knowledge
+- Learn from past challenges
+- Discover patterns across projects
+- Search for similar situations
+- Share lessons with team
+- Track metrics over time
+
+**Outcome values:**
+- `success` - Plan completed successfully
+- `failure` - Plan did not achieve goals
+- `partial` - Some goals achieved, some not
+
+### Workflow 8: Cleaning Up Completed Work
 
 ```bash
 # Delete commands require --force flag for safety
