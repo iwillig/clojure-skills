@@ -362,6 +362,12 @@ clojure-skills task delete 1 --force                       # Deletes single task
 clojure-skills plan skill associate 1 "cli_matic" --position 1
 clojure-skills plan skill list 1
 clojure-skills plan skill dissociate 1 "cli_matic"
+
+# Plan results
+clojure-skills plan result create 1 --summary "Implementation complete" --content "# Results\nImplementation was successful" --status "completed"
+clojure-skills plan result show 1
+clojure-skills plan result update 1 --summary "Implementation complete with minor issues" --status "completed"
+clojure-skills plan result search "database"
 ```
 
 
@@ -762,7 +768,7 @@ The clojure-skills CLI includes a task tracking system for managing complex, mul
 
 **Create a new plan:**
 ```bash
-clojure-skills create-plan \
+clojure-skills plan create \
   --name "unique-plan-name" \
   [--title "Human-Readable Title"] \
   [--description "Detailed description"] \
@@ -783,7 +789,7 @@ clojure-skills create-plan \
 
 **Example:**
 ```bash
-clojure-skills create-plan \
+clojure-skills plan create \
   --name "api-refactor" \
   --title "Refactor REST API" \
   --description "Modernize API with better validation and error handling" \
@@ -794,7 +800,7 @@ clojure-skills create-plan \
 
 **List plans:**
 ```bash
-clojure-skills list-plans [--status STATUS] [--created-by USER] [--assigned-to USER]
+clojure-skills plan list [--status STATUS] [--created-by USER] [--assigned-to USER]
 ```
 
 **Arguments:**
@@ -804,14 +810,14 @@ clojure-skills list-plans [--status STATUS] [--created-by USER] [--assigned-to U
 
 **Examples:**
 ```bash
-clojure-skills list-plans                        # List all plans
-clojure-skills list-plans --status "in-progress" # Only in-progress plans
-clojure-skills list-plans --assigned-to "agent"  # Plans assigned to agent
+clojure-skills plan list                        # List all plans
+clojure-skills plan list --status "in-progress" # Only in-progress plans
+clojure-skills plan list --assigned-to "agent"  # Plans assigned to agent
 ```
 
 **Show plan details:**
 ```bash
-clojure-skills show-plan <PLAN-ID-OR-NAME>
+clojure-skills plan show <PLAN-ID-OR-NAME>
 ```
 
 **Arguments:**
@@ -819,8 +825,8 @@ clojure-skills show-plan <PLAN-ID-OR-NAME>
 
 **Examples:**
 ```bash
-clojure-skills show-plan 1              # Show plan by ID
-clojure-skills show-plan "api-refactor" # Show plan by name
+clojure-skills plan show 1              # Show plan by ID
+clojure-skills plan show "api-refactor" # Show plan by name
 ```
 
 **Output includes:**
@@ -829,11 +835,11 @@ clojure-skills show-plan "api-refactor" # Show plan by name
 - Task lists with IDs: `[ID] Task List Name`
 - Tasks with IDs and completion status: `✓ [ID] Task Name` or `○ [ID] Task Name`
 
-This hierarchical view shows all IDs needed to use `show-task-list` and `show-task` commands.
+This hierarchical view shows all IDs needed to use `task-list show` and `task show` commands.
 
 **Update a plan:**
 ```bash
-clojure-skills update-plan <PLAN-ID> \
+clojure-skills plan update <PLAN-ID> \
   [--name "new-name"] \
   [--title "New Title"] \
   [--description "New description"] \
@@ -848,14 +854,14 @@ clojure-skills update-plan <PLAN-ID> \
 
 **Example:**
 ```bash
-clojure-skills update-plan 1 \
+clojure-skills plan update 1 \
   --title "Updated REST API Refactor" \
   --status "completed"
 ```
 
 **Complete a plan:**
 ```bash
-clojure-skills complete-plan <PLAN-ID>
+clojure-skills plan complete <PLAN-ID>
 ```
 
 **Arguments:**
@@ -863,14 +869,14 @@ clojure-skills complete-plan <PLAN-ID>
 
 **Example:**
 ```bash
-clojure-skills complete-plan 1
+clojure-skills plan complete 1
 ```
 
 #### Managing Task Lists
 
 **Create a task list:**
 ```bash
-clojure-skills create-task-list <PLAN-ID> \
+clojure-skills plan task-list create <PLAN-ID> \
   --name "Task List Name" \
   [--description "Description"] \
   [--position N]
@@ -884,7 +890,7 @@ clojure-skills create-task-list <PLAN-ID> \
 
 **Example:**
 ```bash
-clojure-skills create-task-list 1 \
+clojure-skills plan task-list create 1 \
   --name "Phase 1: Database Setup" \
   --description "Create database schema and migrations" \
   --position 1
@@ -892,7 +898,7 @@ clojure-skills create-task-list 1 \
 
 **Show a task list:**
 ```bash
-clojure-skills show-task-list <TASK-LIST-ID>
+clojure-skills task-list show <TASK-LIST-ID>
 ```
 
 **Arguments:**
@@ -900,7 +906,7 @@ clojure-skills show-task-list <TASK-LIST-ID>
 
 **Example:**
 ```bash
-clojure-skills show-task-list 1
+clojure-skills task-list show 1
 ```
 
 This displays:
@@ -913,7 +919,7 @@ This displays:
 
 **Create a task:**
 ```bash
-clojure-skills create-task <TASK-LIST-ID> \
+clojure-skills task-list task create <TASK-LIST-ID> \
   --name "Task Name" \
   [--description "Description"] \
   [--position N] \
@@ -929,7 +935,7 @@ clojure-skills create-task <TASK-LIST-ID> \
 
 **Example:**
 ```bash
-clojure-skills create-task 1 \
+clojure-skills task-list task create 1 \
   --name "Create users table migration" \
   --description "Add migration for users table with email, password_hash, created_at" \
   --assigned-to "agent" \
@@ -938,7 +944,7 @@ clojure-skills create-task 1 \
 
 **Complete a task:**
 ```bash
-clojure-skills complete-task <TASK-ID>
+clojure-skills task complete <TASK-ID>
 ```
 
 **Arguments:**
@@ -946,12 +952,12 @@ clojure-skills complete-task <TASK-ID>
 
 **Example:**
 ```bash
-clojure-skills complete-task 1
+clojure-skills task complete 1
 ```
 
 **Show a task:**
 ```bash
-clojure-skills show-task <TASK-ID>
+clojure-skills task show <TASK-ID>
 ```
 
 **Arguments:**
@@ -959,7 +965,7 @@ clojure-skills show-task <TASK-ID>
 
 **Example:**
 ```bash
-clojure-skills show-task 1
+clojure-skills task show 1
 ```
 
 This displays:
@@ -977,7 +983,7 @@ This displays:
 ```bash
 # 1. Create implementation plan
 # Note: This outputs "Plan ID: X" - use that ID for subsequent commands
-clojure-skills create-plan \
+clojure-skills plan create \
   --name "user-auth" \
   --title "Add User Authentication" \
   --description "JWT-based authentication with refresh tokens" \
@@ -989,34 +995,34 @@ clojure-skills create-plan \
 # 2. Break down into phases (task lists)
 # Note: Each create-task-list outputs "Created task list: NAME"
 # The task list IDs are auto-incremented (1, 2, 3, 4)
-clojure-skills create-task-list 1 --name "Phase 1: Database Schema" --position 1
-clojure-skills create-task-list 1 --name "Phase 2: Core Logic" --position 2
-clojure-skills create-task-list 1 --name "Phase 3: API Endpoints" --position 3
-clojure-skills create-task-list 1 --name "Phase 4: Testing" --position 4
+clojure-skills plan task-list create 1 --name "Phase 1: Database Schema" --position 1
+clojure-skills plan task-list create 1 --name "Phase 2: Core Logic" --position 2
+clojure-skills plan task-list create 1 --name "Phase 3: API Endpoints" --position 3
+clojure-skills plan task-list create 1 --name "Phase 4: Testing" --position 4
 
 # 3. Add specific tasks to Phase 1 (task list ID 1)
 # Note: Each create-task outputs "Created task: NAME"
 # The task IDs are auto-incremented (1, 2, 3)
-clojure-skills create-task 1 --name "Create users table migration" --position 1
-clojure-skills create-task 1 --name "Create sessions table migration" --position 2
-clojure-skills create-task 1 --name "Add password hashing utilities" --position 3
+clojure-skills task-list task create 1 --name "Create users table migration" --position 1
+clojure-skills task-list task create 1 --name "Create sessions table migration" --position 2
+clojure-skills task-list task create 1 --name "Add password hashing utilities" --position 3
 
 # 4. Work through tasks, marking each complete
-clojure-skills complete-task 1  # Task ID 1
-clojure-skills complete-task 2  # Task ID 2
+clojure-skills task complete 1  # Task ID 1
+clojure-skills task complete 2  # Task ID 2
 
 # 5. Check progress - shows plan with all task lists and tasks
-clojure-skills show-plan 1
+clojure-skills plan show 1
 
 # 6. When all tasks done, complete the plan
-clojure-skills complete-plan 1
+clojure-skills plan complete 1
 ```
 
 **Getting IDs:**
-- **Plan ID**: Shown after `create-plan` in output: "Plan ID: X"
-- **Task List ID**: Shown in `show-plan` output as `[ID] Task List Name`
-- **Task ID**: Shown in `show-plan` output as `[ID] Task Name`
-- **Alternative**: Query plans by name using `show-plan "plan-name"`
+- **Plan ID**: Shown after `plan create` in output: "Plan ID: X"
+- **Task List ID**: Shown in `plan show` output as `[ID] Task List Name`
+- **Task ID**: Shown in `plan show` output as `[ID] Task Name`
+- **Alternative**: Query plans by name using `plan show "plan-name"`
 
 ### CLI Command Reference Table
 
@@ -1024,19 +1030,23 @@ Complete reference for all task tracking commands:
 
 | Command | Positional Args | Required Options | Optional Options | Description |
 |---------|----------------|------------------|------------------|-------------|
-| `create-plan` | None | `--name` | `--title`, `--description`, `--content`, `--status`, `--created-by`, `--assigned-to` | Create a new implementation plan |
-| `list-plans` | None | None | `--status`, `--created-by`, `--assigned-to` | List plans with optional filters |
-| `show-plan` | `<ID-OR-NAME>` | None | None | Show plan details with all task lists and tasks |
-| `update-plan` | `<PLAN-ID>` | None | `--name`, `--title`, `--description`, `--content`, `--status`, `--assigned-to` | Update plan fields |
-| `complete-plan` | `<PLAN-ID>` | None | None | Mark plan as completed |
-| `delete-plan` | `<ID-OR-NAME>` | `--force` | None | Delete a plan (cascades to lists and tasks) |
-| `create-task-list` | `<PLAN-ID>` | `--name` | `--description`, `--position` | Create task list in a plan |
-| `show-task-list` | `<TASK-LIST-ID>` | None | None | Show task list details with all tasks |
-| `delete-task-list` | `<TASK-LIST-ID>` | `--force` | None | Delete a task list (cascades to tasks) |
-| `create-task` | `<TASK-LIST-ID>` | `--name` | `--description`, `--position`, `--assigned-to` | Create task in a task list |
-| `show-task` | `<TASK-ID>` | None | None | Show detailed task information |
-| `complete-task` | `<TASK-ID>` | None | None | Mark task as completed |
-| `delete-task` | `<TASK-ID>` | `--force` | None | Delete a single task |
+| `plan create` | None | `--name` | `--title`, `--description`, `--content`, `--status`, `--created-by`, `--assigned-to` | Create a new implementation plan |
+| `plan list` | None | None | `--status`, `--created-by`, `--assigned-to` | List plans with optional filters |
+| `plan show` | `<ID-OR-NAME>` | None | None | Show plan details with all task lists and tasks |
+| `plan update` | `<PLAN-ID>` | None | `--name`, `--title`, `--description`, `--content`, `--status`, `--assigned-to` | Update plan fields |
+| `plan complete` | `<PLAN-ID>` | None | None | Mark plan as completed |
+| `plan delete` | `<ID-OR-NAME>` | `--force` | None | Delete a plan (cascades to lists and tasks) |
+| `plan task-list create` | `<PLAN-ID>` | `--name` | `--description`, `--position` | Create task list in a plan |
+| `task-list show` | `<TASK-LIST-ID>` | None | None | Show task list details with all tasks |
+| `task-list delete` | `<TASK-LIST-ID>` | `--force` | None | Delete a task list (cascades to tasks) |
+| `task-list task create` | `<TASK-LIST-ID>` | `--name` | `--description`, `--position`, `--assigned-to` | Create task in a task list |
+| `task show` | `<TASK-ID>` | None | None | Show detailed task information |
+| `task complete` | `<TASK-ID>` | None | None | Mark task as completed |
+| `task delete` | `<TASK-ID>` | `--force` | None | Delete a single task |
+| `plan result create` | `<PLAN-ID>` | None | `--content`, `--summary`, `--status` | Create a result for a completed plan |
+| `plan result show` | `<PLAN-ID>` | None | None | Show plan result |
+| `plan result update` | `<PLAN-ID>` | None | `--content`, `--summary`, `--status` | Update a plan result |
+| `plan result search` | `<SEARCH-TERM>` | `--max-results N` | None | Search plan results |
 
 **Argument Types:**
 - `<ID>` - Numeric ID (integer)
@@ -1055,7 +1065,7 @@ When working on a plan, you can associate relevant skills to:
 
 **Associate a skill with a plan:**
 ```bash
-clojure-skills associate-skill <PLAN-ID> <SKILL-NAME-OR-PATH> [--position N]
+clojure-skills plan skill associate <PLAN-ID> <SKILL-NAME-OR-PATH> [--position N]
 ```
 
 **Arguments:**
@@ -1066,20 +1076,20 @@ clojure-skills associate-skill <PLAN-ID> <SKILL-NAME-OR-PATH> [--position N]
 **Examples:**
 ```bash
 # Associate by skill name
-clojure-skills associate-skill 6 "cli_matic" --position 1
+clojure-skills plan skill associate 6 "cli_matic" --position 1
 
 # Associate by file path
-clojure-skills associate-skill 6 "skills/tooling/codox.md" --position 2
+clojure-skills plan skill associate 6 "skills/tooling/codox.md" --position 2
 
 # Multiple skills for a plan
-clojure-skills associate-skill 6 "malli" --position 1
-clojure-skills associate-skill 6 "next_jdbc" --position 2
-clojure-skills associate-skill 6 "honeysql" --position 3
+clojure-skills plan skill associate 6 "malli" --position 1
+clojure-skills plan skill associate 6 "next_jdbc" --position 2
+clojure-skills plan skill associate 6 "honeysql" --position 3
 ```
 
 **Dissociate a skill from a plan:**
 ```bash
-clojure-skills dissociate-skill <PLAN-ID> <SKILL-NAME-OR-PATH>
+clojure-skills plan skill dissociate <PLAN-ID> <SKILL-NAME-OR-PATH>
 ```
 
 **Arguments:**
@@ -1088,12 +1098,12 @@ clojure-skills dissociate-skill <PLAN-ID> <SKILL-NAME-OR-PATH>
 
 **Example:**
 ```bash
-clojure-skills dissociate-skill 6 "cli_matic"
+clojure-skills plan skill dissociate 6 "cli_matic"
 ```
 
 **List skills associated with a plan:**
 ```bash
-clojure-skills list-plan-skills <PLAN-ID>
+clojure-skills plan skill list <PLAN-ID>
 ```
 
 **Arguments:**
@@ -1101,7 +1111,7 @@ clojure-skills list-plan-skills <PLAN-ID>
 
 **Example:**
 ```bash
-clojure-skills list-plan-skills 6
+clojure-skills plan skill list 6
 
 # Output shows:
 # Skills for plan 6:
@@ -1111,9 +1121,9 @@ clojure-skills list-plan-skills 6
 # 3        | language      | clojure_repl|
 ```
 
-**View associated skills in show-plan:**
+**View associated skills in plan show:**
 ```bash
-clojure-skills show-plan 6
+clojure-skills plan show 6
 
 # Output includes:
 # Associated Skills:
@@ -1126,30 +1136,30 @@ clojure-skills show-plan 6
 
 | Command | Positional Args | Required Options | Optional Options | Description |
 |---------|----------------|------------------|------------------|-------------|
-| `associate-skill` | `<PLAN-ID>` `<SKILL-NAME-OR-PATH>` | None | `--position` or `-p` | Associate a skill with a plan |
-| `dissociate-skill` | `<PLAN-ID>` `<SKILL-NAME-OR-PATH>` | None | None | Remove skill association from a plan |
-| `list-plan-skills` | `<PLAN-ID>` | None | None | List all skills associated with a plan |
+| `plan skill associate` | `<PLAN-ID>` `<SKILL-NAME-OR-PATH>` | None | `--position` or `-p` | Associate a skill with a plan |
+| `plan skill dissociate` | `<PLAN-ID>` `<SKILL-NAME-OR-PATH>` | None | None | Remove skill association from a plan |
+| `plan skill list` | `<PLAN-ID>` | None | None | List all skills associated with a plan |
 
 **Workflow Example:**
 ```bash
 # 1. Create a plan for database refactoring
-clojure-skills create-plan --name "db-refactor" --title "Database Layer Refactor"
+clojure-skills plan create --name "db-refactor" --title "Database Layer Refactor"
 # Output: Plan ID: 5
 
 # 2. Associate relevant skills
-clojure-skills associate-skill 5 "next_jdbc" --position 1
-clojure-skills associate-skill 5 "honeysql" --position 2
-clojure-skills associate-skill 5 "ragtime" --position 3
+clojure-skills plan skill associate 5 "next_jdbc" --position 1
+clojure-skills plan skill associate 5 "honeysql" --position 2
+clojure-skills plan skill associate 5 "ragtime" --position 3
 
 # 3. View the plan with associated skills
-clojure-skills show-plan 5
+clojure-skills plan show 5
 
 # 4. When working on the plan, review the skills:
-clojure-skills show-skill "next_jdbc" | jq -r '.content'
-clojure-skills show-skill "honeysql" | jq -r '.content'
+clojure-skills skill show "next_jdbc" | jq -r '.content'
+clojure-skills skill show "honeysql" | jq -r '.content'
 
 # 5. If a skill is no longer needed:
-clojure-skills dissociate-skill 5 "ragtime"
+clojure-skills plan skill dissociate 5 "ragtime"
 ```
 
 ### When to Use Task Tracking
@@ -1565,60 +1575,60 @@ For complex multi-step implementations, use the task tracking system. See [Task 
 
 1. **Create an implementation plan:**
    ```bash
-   clojure-skills create-plan --name "feature-name" --title "Feature Title"
+   clojure-skills plan create --name "feature-name" --title "Feature Title"
    # Note the Plan ID from output
    ```
 
 2. **Break down into phases (task lists):**
    ```bash
-   clojure-skills create-task-list <PLAN-ID> --name "Phase 1: Database" --position 1
-   clojure-skills create-task-list <PLAN-ID> --name "Phase 2: Core Logic" --position 2
-   clojure-skills create-task-list <PLAN-ID> --name "Phase 3: API/UI" --position 3
-   clojure-skills create-task-list <PLAN-ID> --name "Phase 4: Testing" --position 4
+   clojure-skills plan task-list create <PLAN-ID> --name "Phase 1: Database" --position 1
+   clojure-skills plan task-list create <PLAN-ID> --name "Phase 2: Core Logic" --position 2
+   clojure-skills plan task-list create <PLAN-ID> --name "Phase 3: API/UI" --position 3
+   clojure-skills plan task-list create <PLAN-ID> --name "Phase 4: Testing" --position 4
    ```
 
 3. **Associate relevant skills with the plan:**
    ```bash
    # Search for relevant skills first
-   clojure-skills search "topic" -t skills
+   clojure-skills skill search "topic" -t skills
 
    # Associate skills that will be needed
-   clojure-skills associate-skill <PLAN-ID> "skill-name" --position 1
-   clojure-skills associate-skill <PLAN-ID> "another-skill" --position 2
+   clojure-skills plan skill associate <PLAN-ID> "skill-name" --position 1
+   clojure-skills plan skill associate <PLAN-ID> "another-skill" --position 2
 
    # View associated skills
-   clojure-skills list-plan-skills <PLAN-ID>
+   clojure-skills plan skill list <PLAN-ID>
    ```
 
 4. **Add specific tasks to each phase:**
    ```bash
-   # Add tasks to task list (note task list IDs from show-plan)
-   clojure-skills create-task <TASK-LIST-ID> --name "Task name" --position 1
+   # Add tasks to task list (note task list IDs from plan show)
+   clojure-skills task-list task create <TASK-LIST-ID> --name "Task name" --position 1
    ```
 
 5. **Before starting work, load the relevant skills:**
    ```bash
    # Review the plan to see which skills are associated
-   clojure-skills show-plan <PLAN-ID>
+   clojure-skills plan show <PLAN-ID>
 
    # Load each skill's content to refresh your knowledge
-   clojure-skills show-skill "skill-name" | jq -r '.content' | head -100
+   clojure-skills skill show "skill-name" | jq -r '.content' | head -100
 
    # Or search for additional skills as needed
-   clojure-skills search "specific-topic" -t skills
+   clojure-skills skill search "specific-topic" -t skills
    ```
 
 6. **Track progress as you work:**
    ```bash
-   clojure-skills complete-task <TASK-ID>    # Mark tasks complete
-   clojure-skills show-plan <PLAN-ID>        # View progress
-   clojure-skills complete-plan <PLAN-ID>    # When finished
+   clojure-skills task complete <TASK-ID>    # Mark tasks complete
+   clojure-skills plan show <PLAN-ID>        # View progress
+   clojure-skills plan complete <PLAN-ID>    # When finished
    ```
 
 7. **Use IDs correctly:**
-   - Plan IDs are shown after `create-plan`
-   - Task list and task IDs are shown in `show-plan` output
-   - You can also query plans by name: `show-plan "feature-name"`
+   - Plan IDs are shown after `plan create`
+   - Task list and task IDs are shown in `plan show` output
+   - You can also query plans by name: `plan show "feature-name"`
 
 This helps both you and humans understand progress across sessions.
 
@@ -1776,8 +1786,8 @@ This repository is designed for **modular, composable prompt engineering** for C
 
 **When in doubt:**
 - **Before editing any file**: Test it in clojure_eval first
-- **Need library knowledge**: Use `clojure-skills search`
+- **Need library knowledge**: Use `clojure-skills skill search`
 - **Complex feature**: Create an implementation plan and associate relevant skills
-- **Starting work on a plan**: Review associated skills with `list-plan-skills`
+- **Starting work on a plan**: Review associated skills with `plan skill list`
 - **Debugging**: Use clojure_eval to test hypotheses
 - **Before committing**: Run `bb ci` to ensure quality
