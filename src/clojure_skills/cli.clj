@@ -332,7 +332,7 @@
 
 (defn cmd-create-plan
   "Create a new implementation plan."
-  [{:keys [name title description content status created-by assigned-to]}]
+  [{:keys [name title summary description content status created-by assigned-to]}]
   (handle-command-errors
    "Create plan"
    (fn []
@@ -342,6 +342,7 @@
                  v/create-plan-args-schema
                  {:name name
                   :title title
+                  :summary summary
                   :description description
                   :content content
                   :status status
@@ -408,6 +409,8 @@
              (println (str "Status: " (:implementation_plans/status plan)))
              (when (:implementation_plans/title plan)
                (println (str "Title: " (:implementation_plans/title plan))))
+             (when (:implementation_plans/summary plan)
+               (println (str "Summary: " (:implementation_plans/summary plan))))
              (when (:implementation_plans/description plan)
                (println (str "Description: " (:implementation_plans/description plan))))
              (when (:implementation_plans/created_by plan)
@@ -455,7 +458,7 @@
 
 (defn cmd-update-plan
   "Update an implementation plan."
-  [{:keys [_arguments name title description content status assigned-to]}]
+  [{:keys [_arguments name title summary description content status assigned-to]}]
   (let [plan-id (first _arguments)]
     (validate-non-blank plan-id "Plan ID cannot be empty")
     (handle-command-errors
@@ -468,6 +471,7 @@
                    {:id plan-id
                     :name name
                     :title title
+                    :summary summary
                     :description description
                     :content content
                     :status status
@@ -944,6 +948,9 @@
               {:option "title"
                :as "Plan title"
                :type :string}
+              {:option "summary"
+               :as "Plan summary (max 1000 chars, searchable)"
+               :type :string}
               {:option "description"
                :as "Plan description"
                :type :string}
@@ -995,6 +1002,9 @@
                :type :string}
               {:option "title"
                :as "New title"
+               :type :string}
+              {:option "summary"
+               :as "New summary (max 1000 chars, searchable)"
                :type :string}
               {:option "description"
                :as "New description"

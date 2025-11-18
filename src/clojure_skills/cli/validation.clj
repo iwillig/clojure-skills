@@ -34,6 +34,7 @@
   [:map
    [:name [:string {:min 1 :max 255}]]
    [:title {:optional true} [:maybe [:string {:max 500}]]]
+   [:summary {:optional true} [:maybe [:string {:max 1000}]]]
    [:description {:optional true} [:maybe [:string {:max 2000}]]]
    [:content {:optional true} [:maybe :string]]
    [:status {:optional true} [:maybe status-schema]]
@@ -59,6 +60,7 @@
    [:id :int]
    [:name {:optional true} [:maybe [:string {:min 1 :max 255}]]]
    [:title {:optional true} [:maybe [:string {:max 500}]]]
+   [:summary {:optional true} [:maybe [:string {:max 1000}]]]
    [:description {:optional true} [:maybe [:string {:max 2000}]]]
    [:content {:optional true} [:maybe :string]]
    [:status {:optional true} [:maybe status-schema]]

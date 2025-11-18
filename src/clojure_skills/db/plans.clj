@@ -37,6 +37,7 @@
   [:map
    [:name [:string {:min 1 :max 255}]]
    [:title {:optional true} [:maybe [:string {:max 500}]]]
+   [:summary {:optional true} [:maybe [:string {:max 1000}]]]
    [:description {:optional true} [:maybe [:string {:max 2000}]]]
    [:content {:optional true} [:maybe :string]]
    [:status {:optional true} [:maybe status-schema]]
@@ -48,6 +49,7 @@
   [:map
    [:name {:optional true} [:maybe [:string {:min 1 :max 255}]]]
    [:title {:optional true} [:maybe [:string {:max 500}]]]
+   [:summary {:optional true} [:maybe [:string {:max 1000}]]]
    [:description {:optional true} [:maybe [:string {:max 2000}]]]
    [:content {:optional true} [:maybe :string]]
    [:status {:optional true} [:maybe status-schema]]
@@ -107,6 +109,7 @@
 
   Optional keys:
     :title - Plan title (max 500 chars)
+    :summary - Plan summary (max 1000 chars, searchable)
     :description - Plan description (max 2000 chars)
     :content - Plan content (markdown, any length)
     :status - Plan status (default: 'draft')
@@ -118,6 +121,7 @@
   Example:
     (create-plan db {:name \"API Redesign\"
                      :title \"Redesign REST API\"
+                     :summary \"Modernize API with better validation and error handling\"
                      :status \"in-progress\"
                      :assigned_to \"alice@example.com\"})"
   [db plan-map]
@@ -132,11 +136,12 @@
       (jdbc/execute-one!
        db
        ["INSERT INTO implementation_plans
-         (name, title, description, content, status, created_by, assigned_to)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+         (name, title, summary, description, content, status, created_by, assigned_to)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          RETURNING *"
         (:name plan-data)
         (:title plan-data)
+        (:summary plan-data)
         (:description plan-data)
         (:content plan-data)
         (:status plan-data)
@@ -242,6 +247,7 @@
   Updatable fields:
     :name - Plan name (1-255 chars)
     :title - Plan title (max 500 chars)
+    :summary - Plan summary (max 1000 chars, searchable)
     :description - Plan description (max 2000 chars)
     :content - Plan content (any length)
     :status - Plan status (one of valid statuses)
@@ -253,7 +259,8 @@
 
   Example:
     (update-plan db 42 {:status \"completed\"
-                        :title \"Updated Title\"})"
+                        :title \"Updated Title\"
+                        :summary \"Updated summary\"})"
   [db id update-map]
   (validate! plan-id-schema id)
   (when (empty? update-map)
@@ -263,7 +270,7 @@
   (validate! update-plan-schema update-map)
 
   (try
-    (let [fields (select-keys update-map [:name :title :description :content :status :assigned_to])
+    (let [fields (select-keys update-map [:name :title :summary :description :content :status :assigned_to])
           _ (when (empty? fields)
               (throw (ex-info "No valid fields to update"
                               {:type ::validation-error
@@ -350,7 +357,7 @@
     ;; Note: HoneySQL doesn't have great FTS5 support, using raw SQL for MATCH clause
     ;; but still parameterized for safety
     (let [sql-str "SELECT p.*,
-                          snippet(implementation_plans_fts, 3, '[', ']', '...', 30) as snippet,
+                          snippet(implementation_plans_fts, -1, '[', ']', '...', 30) as snippet,
                           rank
                    FROM implementation_plans_fts
                    JOIN implementation_plans p ON implementation_plans_fts.rowid = p.id

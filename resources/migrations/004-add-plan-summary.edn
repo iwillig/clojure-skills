@@ -1,0 +1,76 @@
+{:id "004-add-plan-summary"
+
+ :up
+ ["ALTER TABLE implementation_plans ADD COLUMN summary TEXT"
+
+  "DROP TRIGGER IF EXISTS implementation_plans_au"
+  "DROP TRIGGER IF EXISTS implementation_plans_ad"
+  "DROP TRIGGER IF EXISTS implementation_plans_ai"
+  "DROP TABLE IF EXISTS implementation_plans_fts"
+
+  "CREATE VIRTUAL TABLE IF NOT EXISTS implementation_plans_fts USING fts5(
+     name,
+     title,
+     summary,
+     description,
+     content,
+     content='implementation_plans',
+     content_rowid='id'
+   )"
+
+  "INSERT INTO implementation_plans_fts(rowid, name, title, summary, description, content)
+   SELECT id, name, title, summary, description, content FROM implementation_plans"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_ai AFTER INSERT ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(rowid, name, title, summary, description, content)
+     VALUES (new.id, new.name, new.title, new.summary, new.description, new.content);
+   END"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_ad AFTER DELETE ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(implementation_plans_fts, rowid, name, title, summary, description, content)
+     VALUES('delete', old.id, old.name, old.title, old.summary, old.description, old.content);
+   END"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_au AFTER UPDATE ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(implementation_plans_fts, rowid, name, title, summary, description, content)
+     VALUES('delete', old.id, old.name, old.title, old.summary, old.description, old.content);
+     INSERT INTO implementation_plans_fts(rowid, name, title, summary, description, content)
+     VALUES (new.id, new.name, new.title, new.summary, new.description, new.content);
+   END"]
+
+ :down
+ ["DROP TRIGGER IF EXISTS implementation_plans_au"
+  "DROP TRIGGER IF EXISTS implementation_plans_ad"
+  "DROP TRIGGER IF EXISTS implementation_plans_ai"
+  "DROP TABLE IF EXISTS implementation_plans_fts"
+
+  "CREATE VIRTUAL TABLE IF NOT EXISTS implementation_plans_fts USING fts5(
+     name,
+     title,
+     description,
+     content,
+     content='implementation_plans',
+     content_rowid='id'
+   )"
+
+  "INSERT INTO implementation_plans_fts(rowid, name, title, description, content)
+   SELECT id, name, title, description, content FROM implementation_plans"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_ai AFTER INSERT ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(rowid, name, title, description, content)
+     VALUES (new.id, new.name, new.title, new.description, new.content);
+   END"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_ad AFTER DELETE ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(implementation_plans_fts, rowid, name, title, description, content)
+     VALUES('delete', old.id, old.name, old.title, old.description, old.content);
+   END"
+
+  "CREATE TRIGGER IF NOT EXISTS implementation_plans_au AFTER UPDATE ON implementation_plans BEGIN
+     INSERT INTO implementation_plans_fts(implementation_plans_fts, rowid, name, title, description, content)
+     VALUES('delete', old.id, old.name, old.title, old.description, old.content);
+     INSERT INTO implementation_plans_fts(rowid, name, title, description, content)
+     VALUES (new.id, new.name, new.title, new.description, new.content);
+   END"
+
+  "ALTER TABLE implementation_plans DROP COLUMN summary"]}

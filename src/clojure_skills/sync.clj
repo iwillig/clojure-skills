@@ -15,14 +15,12 @@
    (java.security
     MessageDigest)))
 
-
 (defn compute-hash
   "Compute SHA-256 hash of file content."
   [content]
   (let [digest (MessageDigest/getInstance "SHA-256")
         bytes (.digest digest (.getBytes content "UTF-8"))]
     (apply str (map #(format "%02x" %) bytes))))
-
 
 (defn extract-frontmatter
   "Extract YAML frontmatter from markdown content.
@@ -46,12 +44,10 @@
           [nil content]))
       [nil content])))
 
-
 (defn estimate-tokens
   "Estimate token count (roughly 4 characters per token)."
   [text]
   (int (/ (count text) 4)))
-
 
 (defn parse-skill-path
   "Parse skill file path to extract category and name.
@@ -74,7 +70,6 @@
     {:category category
      :name name}))
 
-
 (defn scan-skill-files
   "Scan skills directory and return list of skill file paths."
   [skills-dir]
@@ -86,7 +81,6 @@
            (map #(str (.getPath ^File %)))
            (sort)))))
 
-
 (defn scan-prompt-files
   "Scan prompts directory and return list of prompt file paths."
   [prompts-dir]
@@ -97,7 +91,6 @@
                          (str/ends-with? (.getName ^File %) ".md")))
            (map #(str (.getPath ^File %)))
            (sort)))))
-
 
 (defn parse-skill-file
   "Parse a skill markdown file and extract metadata."
@@ -117,7 +110,6 @@
      :file_hash file-hash ;; Using snake_case for SQL compatibility
      :size_bytes size-bytes
      :token_count token-count}))
-
 
 (defn parse-prompt-file
   "Parse a prompt markdown file and extract metadata."
@@ -140,18 +132,15 @@
      :size_bytes size-bytes
      :token_count token-count}))
 
-
 (defn get-skill-by-path
   "Get skill from database by path."
   [db path]
   (jdbc/execute-one! db ["SELECT * FROM skills WHERE path = ?" path]))
 
-
 (defn get-prompt-by-path
   "Get prompt from database by path."
   [db path]
   (jdbc/execute-one! db ["SELECT * FROM prompts WHERE path = ?" path]))
-
 
 (defn upsert-skill
   "Insert or update skill in database."
@@ -165,7 +154,6 @@
       ;; Insert
       (sql/insert! db :skills skill))))
 
-
 (defn upsert-prompt
   "Insert or update prompt in database."
   [db prompt]
@@ -177,7 +165,6 @@
                    {:path (:path prompt)})
       ;; Insert
       (sql/insert! db :prompts (dissoc prompt :sections)))))
-
 
 (defn sync-skill
   "Sync a single skill file to database."
@@ -198,7 +185,6 @@
       (log/log-error "Error syncing skill" :path skill-path :error (.getMessage e))
       (println "  ERROR syncing" skill-path ":" (.getMessage e)))))
 
-
 (defn sync-prompt
   "Sync a single prompt file to database."
   [db prompt-path]
@@ -218,12 +204,11 @@
       (log/log-error "Error syncing prompt" :path prompt-path :error (.getMessage e))
       (println "  ERROR syncing" prompt-path ":" (.getMessage e)))))
 
-
 (defn sync-all-skills
   "Sync all skills from skills directory to database."
   [db config]
-  (let [project-root (or (get-in config [:project :root])
-                         (System/getProperty "user.dir"))
+  (let [project-root (config/expand-path (or (get-in config [:project :root])
+                                             (System/getProperty "user.dir")))
         skills-dir (str project-root "/" (get-in config [:project :skills-dir]))
         skill-files (scan-skill-files skills-dir)]
     (log/log-info "Starting skills sync" :count (count skill-files) :directory skills-dir)
@@ -233,12 +218,11 @@
     (log/log-success "Skills sync complete" :count (count skill-files))
     (println "Skills sync complete.")))
 
-
 (defn sync-all-prompts
   "Sync all prompts from prompts directory to database."
   [db config]
-  (let [project-root (or (get-in config [:project :root])
-                         (System/getProperty "user.dir"))
+  (let [project-root (config/expand-path (or (get-in config [:project :root])
+                                             (System/getProperty "user.dir")))
         prompts-dir (str project-root "/" (get-in config [:project :prompts-dir]))
         prompt-files (scan-prompt-files prompts-dir)]
     (log/log-info "Starting prompts sync" :count (count prompt-files) :directory prompts-dir)
@@ -247,7 +231,6 @@
       (sync-prompt db prompt-file))
     (log/log-success "Prompts sync complete" :count (count prompt-files))
     (println "Prompts sync complete.")))
-
 
 (defn sync-all
   "Sync all skills and prompts to database."
