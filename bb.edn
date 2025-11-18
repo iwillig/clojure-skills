@@ -158,6 +158,7 @@
 
            ;; Build clojure_build
            (shell "bb build clojure_build")
+           (shell "bb build code_archivist")
            (shell "bb build shortcut_cli_builder")
            (shell "bb build software_alchemist_build")
 

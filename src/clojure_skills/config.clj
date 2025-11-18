@@ -10,7 +10,8 @@
    [clojure-skills.logging :as log]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [clojure.string :as str]))
+   [clojure.string :as str])
+  (:import (java.io File)))
 
 (set! *warn-on-reflection* true)
 
@@ -47,7 +48,7 @@
    (let [markers [".clojure-skills" "deps.edn" ".git"]]
      (loop [path (io/file current-path)]
        (when path
-         (let [files (set (map #(.getName %) (.listFiles path)))]
+         (let [files (set (map #(.getName ^File %) (.listFiles ^File path)))]
            (if (some files markers)
              (.getAbsolutePath path)
              (recur (.getParentFile path)))))))))
@@ -87,25 +88,28 @@
 (def default-config
   "Default configuration values."
   {:database
-   {:path "~/.config/clojure-skills/clojure-skills.db"
+   {:path         "~/.config/clojure-skills/clojure-skills.db"
     :auto-migrate true}
 
    :project
-   {:root nil
-    :skills-dir "skills"
+   {:root        nil
+    :skills-dir  "skills"
     :prompts-dir "prompts"
-    :build-dir "_build"}
+    :build-dir   "_build"}
 
    :search
-   {:max-results 50
+   {:max-results   50
     :context-lines 3}
 
    :output
    {:format :table
-    :color true}
+    :color  true}
 
    :permissions
-   {:plan false}})
+   {:plan      false
+    :task      false
+    :task-list false
+    :prompt    false}})
 
 (defn get-config-file-path
   "Get path to config.edn file."

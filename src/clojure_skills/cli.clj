@@ -275,13 +275,38 @@
              prompts))))))
 
 (defn cmd-stats
-  "Show database statistics."
+  "Show database statistics and configuration."
   [_opts]
   (handle-command-errors
    "Get stats"
    (fn []
-     (let [[_config db] (load-config-and-db)
-           stats (search/get-stats db)]
+     (let [[config db] (load-config-and-db)
+           stats (search/get-stats db)
+           db-path (config/get-db-path config)]
+       (println)
+       (println (bling/bling [:bold "Configuration"]))
+       (println)
+       (format-table
+        [{:source "Database Path" :value db-path}
+         {:source "Auto-migrate" :value (get-in config [:database :auto-migrate] true)}
+         {:source "Skills Directory" :value (get-in config [:project :skills-dir] "skills")}
+         {:source "Prompts Directory" :value (get-in config [:project :prompts-dir] "prompts")}
+         {:source "Build Directory" :value (get-in config [:project :build-dir] "_build")}
+         {:source "Max Results" :value (get-in config [:search :max-results] 50)}
+         {:source "Output Format" :value (get-in config [:output :format] :table)}
+         {:source "Color Output" :value (get-in config [:output :color] true)}])
+
+       ;; Show permissions configuration
+       (let [permissions (get config :permissions {})]
+         (when-not (empty? permissions)
+           (println)
+           (println (bling/bling [:bold "Permissions"]))
+           (println)
+           (format-table
+            (mapv (fn [[k v]]
+                    {:feature (name k) :enabled (not (false? v))})
+                  permissions))))
+
        (println)
        (println (bling/bling [:bold "Database Statistics"]))
        (println)
@@ -1039,7 +1064,7 @@
        :runs cmd-reset-db}
 
       {:command "stats"
-       :description "Show database statistics"
+       :description "Show database statistics and configuration"
        :runs cmd-stats}]}
 
     {:command "skill"
