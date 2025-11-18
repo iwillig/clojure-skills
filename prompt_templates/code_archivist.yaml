@@ -8,3 +8,4 @@ skills:
   - skills/libraries/database/datascript.md
   - skills/libraries/database/next_jdbc.md
   - skills/tooling/clojure_lsp_api.md
+  - skills/tooling/clojure_skills_cli.md

@@ -1,0 +1,13 @@
+---
+title: Clojure Plan Executor
+author: Ivan Willig
+date: 2025-11-18
+sections:
+  - skills/language/clojure_intro.md
+  - skills/language/clojure_repl.md
+  - skills/clojure_mcp/clojure_eval.md
+  - skills/tooling/babashka.md
+  - skills/tooling/clojure_skills_cli.md
+  - skills/testing/clojure_test.md
+  - skills/testing/kaocha.md
+  - skills/llm_agent/agent_loop.md
