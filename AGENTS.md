@@ -573,36 +573,6 @@ bb help
 # - Other Tasks
 ```
 
-#### `bb list-skills` - Skills Inventory
-
-Lists all skills in a formatted table with metadata extracted via pandoc:
-
-```bash
-bb list-skills
-
-# Output shows:
-# CATEGORY      NAME                          DESCRIPTION                                         SIZE   TOKENS
-# language      clojure_introduction          Introduction to Clojure fundamentals, immutabil...  2.7KB     682
-# libraries     malli_schema_validation       Validate data structures and schemas using Mall...  10.8KB   2,773
-# ...
-# TOTAL         63 skills                                                                         647KB  165,555
-```
-
-**Features:**
-- Organized by category (language, libraries, testing, tooling, etc.)
-- Shows skill name from YAML frontmatter metadata (via pandoc)
-- Shows truncated description (80 chars) from YAML frontmatter (HTML tags stripped)
-- File size in human-readable format (KB/MB)
-- Estimated token count (Anthropic ~4 chars/token)
-- Total size and token count at bottom
-- Metadata extracted using `pandoc --template prompt_configs/metadata.plain`
-
-**Use cases:**
-- Get overview of available skills
-- Estimate prompt size when composing skills
-- Identify which skills to include in prompts
-- Track total skill library size
-
 #### `bb watch [name]` - Auto-rebuild on Changes
 
 Watches for file changes and automatically rebuilds prompts:
@@ -1656,7 +1626,6 @@ word = "word"
 # Help & Information
 bb help                   # Show comprehensive help
 bb tasks                  # List all tasks
-bb list-skills            # Show all skills in table
 bb list-prompts           # Show built prompts with sizes
 
 # Building
@@ -1855,19 +1824,18 @@ This helps both you and humans understand progress across sessions.
 
 ### When Asked to Add a Skill
 
-1. Check existing skills with `bb list-skills` to avoid duplication
-2. Use `clojure-skills search` to see if similar skills exist
-3. Determine the appropriate category (`language/`, `clojure_mcp/`, etc.)
-4. Create a focused markdown file with YAML frontmatter
-5. Include practical examples
-6. **Test all code examples with clj-nrepl-eval**
-7. Check spelling with `bb typos`
-8. Verify skill appears in `bb list-skills` output
-9. Sync database: `clojure-skills sync`
+1. Use `clojure-skills skill search` to see if similar skills exist
+2. Determine the appropriate category (`language/`, `clojure_mcp/`, etc.)
+3. Create a focused markdown file with YAML frontmatter
+4. Include practical examples
+5. **Test all code examples with clj-nrepl-eval**
+6. Check spelling with `bb typos`
+7. Sync database: `clojure-skills db sync`
+8. Verify skill appears with `clojure-skills skill search`
 
 ### When Asked to Create a Prompt
 
-1. Use `bb list-skills` to identify available skills
+1. Use `clojure-skills skill list` to identify available skills
 2. Create prompt file with YAML frontmatter in `prompts/<name>.md`
 3. Create metadata file in `prompt_configs/<name>.yaml`
 4. List skills in logical order in the YAML
@@ -1889,10 +1857,10 @@ This helps both you and humans understand progress across sessions.
 
 ### When Asked to Check Skill Library
 
-1. Run `bb list-skills` to see all available skills
-2. Check total size and token count
-3. Identify skills by category (language, libraries, testing, tooling)
-4. Note token estimates for prompt composition
+1. Run `clojure-skills skill list` to see all available skills
+2. Use `clojure-skills db stats` to check database statistics
+3. Identify skills by category with `clojure-skills skill list -c <category>`
+4. Search for specific skills with `clojure-skills skill search <topic>`
 
 ### When Asked About Build Status
 
