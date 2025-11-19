@@ -5,7 +5,7 @@
   "autoupdate": true,
   "agent": {
 
-    "clojure_build": {
+    "clojure_builder": {
       "model": "anthropic/claude-sonnet-4-5",
       "prompt": "{file:./_build/clojure_build.md}",
       "tools": {
@@ -20,7 +20,27 @@
         "write": "ask",
         "edit": "ask"
       }
+    },
+
+
+    "skill_builder": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/clojure_skill_builder.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": true,
+        "bash": true,
+        "todowrite": false,
+        "todoread": false
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
     }
+
+
   },
   "mcp": {},
   "lsp": {

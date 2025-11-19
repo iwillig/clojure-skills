@@ -8,8 +8,8 @@ fragments:
   - skills/language/clojure_intro.md
   - skills/language/clojure_repl.md
   - skills/clojure_mcp/clojure_eval.md
-  
+
   # Command-line tools
   - skills/tooling/clojure_mcp_light.md
-  - skills/tooling/clj_paren_repair.md
+#  - skills/tooling/clj_paren_repair.md
 references: []
