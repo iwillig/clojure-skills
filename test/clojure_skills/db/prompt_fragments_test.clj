@@ -8,16 +8,18 @@
    [next.jdbc.sql :as sql]
    [clojure.java.io :as io]))
 
-(defn create-test-db []
+(defn create-test-db
   "Create a test database with all migrations applied"
+  []
   (let [db-file (str "test-prompt-fragments-" (java.util.UUID/randomUUID) ".db")
         db-spec {:dbtype "sqlite" :dbname db-file}]
     ;; Apply all migrations
     (migrate/migrate-db db-spec)
     {:db-spec db-spec :db-file db-file}))
 
-(defn cleanup-test-db [db-file]
+(defn cleanup-test-db
   "Clean up test database file"
+  [db-file]
   (when (.exists (io/file db-file))
     (.delete (io/file db-file))))
 
@@ -90,40 +92,38 @@
         ;; Get the skill ID
         (let [skill-id (-> (jdbc/execute! db ["SELECT id FROM skills LIMIT 1"])
                            first
-                           :skills/id)]
+                           :skills/id)
+              ;; Create a prompt fragment
+              fragment (pf/create-prompt-fragment db {:name "skill-fragment"
+                                                      :title "Skill Fragment"
+                                                      :description "A fragment with skills"})
+              ;; Associate skill with fragment
+              association (pf/associate-skill-with-fragment db {:fragment_id (:prompt_fragments/id fragment)
+                                                                :skill_id skill-id
+                                                                :position 1})]
+          (is (some? association) "Association should be created")
+          (is (= (:prompt_fragments/id fragment) (:prompt_fragment_skills/fragment_id association)) "Fragment ID should match")
+          (is (= skill-id (:prompt_fragment_skills/skill_id association)) "Skill ID should match")
+          (is (= 1 (:prompt_fragment_skills/position association)) "Position should match")
 
-          ;; Create a prompt fragment
-          (let [fragment (pf/create-prompt-fragment db {:name "skill-fragment"
-                                                        :title "Skill Fragment"
-                                                        :description "A fragment with skills"})]
+          ;; Test get skills for fragment
+          (let [skills (pf/get-skills-for-fragment db (:prompt_fragments/id fragment))]
+            (is (= 1 (count skills)) "Should have one skill")
+            (is (= skill-id (:skills/id (first skills))) "Skill ID should match")
+            (is (= 1 (:prompt_fragment_skills/position (first skills))) "Position should match"))
 
-            ;; Test associate skill with fragment
-            (let [association (pf/associate-skill-with-fragment db {:fragment_id (:prompt_fragments/id fragment)
-                                                                    :skill_id skill-id
-                                                                    :position 1})]
-              (is (some? association) "Association should be created")
-              (is (= (:prompt_fragments/id fragment) (:prompt_fragment_skills/fragment_id association)) "Fragment ID should match")
-              (is (= skill-id (:prompt_fragment_skills/skill_id association)) "Skill ID should match")
-              (is (= 1 (:prompt_fragment_skills/position association)) "Position should match")
+          ;; Test get fragments containing skill
+          (let [fragments (pf/get-fragments-containing-skill db skill-id)]
+            (is (= 1 (count fragments)) "Should have one fragment containing the skill")
+            (is (= (:prompt_fragments/id fragment) (:prompt_fragments/id (first fragments))) "Fragment ID should match"))
 
-              ;; Test get skills for fragment
-              (let [skills (pf/get-skills-for-fragment db (:prompt_fragments/id fragment))]
-                (is (= 1 (count skills)) "Should have one skill")
-                (is (= skill-id (:skills/id (first skills))) "Skill ID should match")
-                (is (= 1 (:prompt_fragment_skills/position (first skills))) "Position should match"))
+          ;; Test remove skill from fragment
+          (let [removed (pf/remove-skill-from-fragment db (:prompt_fragments/id fragment) skill-id)]
+            (is (some? removed) "Removal should return the removed record")
 
-              ;; Test get fragments containing skill
-              (let [fragments (pf/get-fragments-containing-skill db skill-id)]
-                (is (= 1 (count fragments)) "Should have one fragment containing the skill")
-                (is (= (:prompt_fragments/id fragment) (:prompt_fragments/id (first fragments))) "Fragment ID should match"))
-
-              ;; Test remove skill from fragment
-              (let [removed (pf/remove-skill-from-fragment db (:prompt_fragments/id fragment) skill-id)]
-                (is (some? removed) "Removal should return the removed record")
-
-                ;; Verify removal
-                (let [skills (pf/get-skills-for-fragment db (:prompt_fragments/id fragment))]
-                  (is (= 0 (count skills)) "Should have no skills after removal"))))))
+            ;; Verify removal
+            (let [skills (pf/get-skills-for-fragment db (:prompt_fragments/id fragment))]
+              (is (= 0 (count skills)) "Should have no skills after removal"))))
 
         (finally
           (cleanup-test-db db-file))))))
@@ -151,39 +151,33 @@
                                   :file_hash "source-hash"
                                   :size_bytes 200})
 
-        (let [skill-id (-> (jdbc/execute! db ["SELECT id FROM skills LIMIT 1"])
-                           first
-                           :skills/id)
-              source-prompt-id (-> (jdbc/execute! db ["SELECT id FROM prompts WHERE name = ?" "source-prompt"])
+        (let [source-prompt-id (-> (jdbc/execute! db ["SELECT id FROM prompts WHERE name = ?" "source-prompt"])
                                    first
-                                   :prompts/id)]
+                                   :prompts/id)
+              ;; Create a prompt fragment and test references
+              fragment (pf/create-prompt-fragment db {:name "reference-fragment"
+                                                      :title "Reference Fragment"
+                                                      :description "A fragment for references"})
+              reference (pf/add-prompt-reference db {:source_prompt_id source-prompt-id
+                                                     :target_fragment_id (:prompt_fragments/id fragment)
+                                                     :reference_type "fragment"
+                                                     :position 1})]
+          (is (some? reference) "Reference should be created")
+          (is (= source-prompt-id (:prompt_references/source_prompt_id reference)) "Source prompt ID should match")
+          (is (= (:prompt_fragments/id fragment) (:prompt_references/target_fragment_id reference)) "Target fragment ID should match")
+          (is (= "fragment" (:prompt_references/reference_type reference)) "Reference type should match")
+          (is (= 1 (:prompt_references/position reference)) "Position should match")
 
-          ;; Create a prompt fragment
-          (let [fragment (pf/create-prompt-fragment db {:name "reference-fragment"
-                                                        :title "Reference Fragment"
-                                                        :description "A fragment for references"})]
+          ;; Test get references for prompt
+          (let [references (pf/get-references-for-prompt db source-prompt-id)]
+            (is (= 1 (count references)) "Should have one reference")
+            (is (= "fragment" (:prompt_references/reference_type (first references))) "Reference type should match"))
 
-            ;; Test add prompt reference to fragment
-            (let [reference (pf/add-prompt-reference db {:source_prompt_id source-prompt-id
-                                                         :target_fragment_id (:prompt_fragments/id fragment)
-                                                         :reference_type "fragment"
-                                                         :position 1})]
-              (is (some? reference) "Reference should be created")
-              (is (= source-prompt-id (:prompt_references/source_prompt_id reference)) "Source prompt ID should match")
-              (is (= (:prompt_fragments/id fragment) (:prompt_references/target_fragment_id reference)) "Target fragment ID should match")
-              (is (= "fragment" (:prompt_references/reference_type reference)) "Reference type should match")
-              (is (= 1 (:prompt_references/position reference)) "Position should match")
-
-              ;; Test get references for prompt
-              (let [references (pf/get-references-for-prompt db source-prompt-id)]
-                (is (= 1 (count references)) "Should have one reference")
-                (is (= "fragment" (:prompt_references/reference_type (first references))) "Reference type should match"))
-
-              ;; Test get prompt with fragment references
-              (let [prompt-with-refs (pf/get-prompt-with-fragment-references db source-prompt-id)]
-                (is (some? (:prompts/id prompt-with-refs)) "Should have prompt data")
-                (is (= 1 (count (:fragment_references prompt-with-refs))) "Should have one fragment reference")
-                (is (= "reference-fragment" (:prompt_references/name (first (:fragment_references prompt-with-refs)))) "Fragment name should match")))))
+          ;; Test get prompt with fragment references
+          (let [prompt-with-refs (pf/get-prompt-with-fragment-references db source-prompt-id)]
+            (is (some? (:prompts/id prompt-with-refs)) "Should have prompt data")
+            (is (= 1 (count (:fragment_references prompt-with-refs))) "Should have one fragment reference")
+            (is (= "reference-fragment" (:prompt_references/name (first (:fragment_references prompt-with-refs)))) "Fragment name should match")))
 
         (finally
           (cleanup-test-db db-file))))))

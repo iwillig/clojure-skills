@@ -92,7 +92,7 @@
   "mcp": {},
   "lsp": {
     "clojure-lsp": {
-      "command": ["clojure-lsp"],
+      "command": ["/usr/local/bin/clojure-lsp"],
       "extensions": [".clj", ".cljs", ".cljc", ".edn", ".bb"],
       "env": {
         "CLOJURE_LSP_LOG_LEVEL": "info"
