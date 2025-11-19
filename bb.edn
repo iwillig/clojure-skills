@@ -100,56 +100,36 @@
           (defn truncate-string [s max-length]
             (if (and s (> (count s) max-length))
               (str (subs s 0 (- max-length 3)) "...")
-              (or s ""))))
+              (or s "")))
+
+          (defn strip-ansi [s]
+            "Remove ANSI color codes from string"
+            (str/replace s (re-pattern "\033\\[[0-9;]*m") "")))
 
   ;; Build a specific prompt file by name
   build
   {:doc "Build a specific prompt file by name (without .md extension)\nUsage: bb build clojure_skill_builder"
    :task (let [name (require-arg "name")
-               prompt-file (str "prompts/" name ".md")
-               metadata-file (str "prompt_configs/" name ".yaml")
-               output-file (str "_build/" name ".md")
-               template-file "prompt_configs/combine.md"]
-
-           ;; Validate all required files exist
-           (when-not (fs/exists? prompt-file)
-             (error-msg (str "Prompt file not found: " prompt-file))
-             (System/exit 1))
-
-           (when-not (fs/exists? metadata-file)
-             (error-msg (str "Metadata file not found: " metadata-file))
-             (System/exit 1))
-
-           (when-not (fs/exists? template-file)
-             (error-msg (str "Template file not found: " template-file))
-             (System/exit 1))
+               output-file (str "_build/" name ".md")]
 
            (info-msg (str "Building " output-file "..."))
            (fs/create-dirs "_build")
 
-           ;; Read and validate fragments (embedded skills)
-            ;; Note: 'references' are tracked in database but not embedded in build
-            (let [meta-content (yaml/parse-string (slurp metadata-file))
-                  ;; Try :fragments first (new format), fallback to :skills (legacy)
-                  fragments (or (get meta-content :fragments)
-                                (get meta-content :skills)
-                                [])
-                  missing-fragments (filter (fn [s] (not (fs/exists? s))) fragments)]
-
-             (when (seq missing-skills)
-               (error-msg "Missing skill files:")
-               (doseq [skill missing-skills]
-                 (println "  -" skill))
-               (System/exit 1))
-
-             (let [skill-files (str/join " " skills)
-                   pandoc-cmd (str "pandoc " prompt-file " " skill-files
-                                   " --metadata-file=" metadata-file
-                                   " --template=" template-file
-                                   " -o " output-file)]
-
-               (shell pandoc-cmd)
-               (success-msg (str "Build successful: " output-file)))))}
+           ;; Use CLI to generate prompt content
+           ;; Redirect stderr to /dev/null to suppress mulog output
+           (let [result (p/shell {:out :string
+                                  :err :string
+                                  :continue true}
+                                 (str "bb main prompt show " name " 2>/dev/null"))]
+             (if (zero? (:exit result))
+               (let [content (:out result)
+                     cleaned (strip-ansi content)]
+                 (spit output-file cleaned)
+                 (success-msg (str "Build successful: " output-file)))
+               (do
+                 (error-msg (str "Failed to build prompt: " name))
+                 (println (:err result))
+                 (System/exit 1)))))}
 
   ;; Build all prompt files
   build-all

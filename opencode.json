@@ -7,74 +7,7 @@
 
     "clojure_build": {
       "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:./_build/clojure_build.md}",
-      "tools": {
-        "write": true,
-        "edit": true,
-        "read": true,
-        "bash": true,
-        "todowrite": false,
-        "todoread": false
-      },
-      "permission": {
-        "write": "ask",
-        "edit": "ask"
-      }
-    },
-
-    "plan_executor": {
-      "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:./_build/plan_executor.md}",
-      "tools": {
-        "write": true,
-        "edit": true,
-        "read": true,
-        "bash": true,
-        "todowrite": false,
-        "todoread": false
-      },
-      "permission": {
-        "write": "ask",
-        "edit": "ask"
-      }
-    },
-
-    "code_archivist": {
-      "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:./_build/clojure_build.md}",
-      "tools": {
-        "write": true,
-        "edit": true,
-        "read": true,
-        "bash": true,
-        "todowrite": false,
-        "todoread": false,
-      },
-      "permission": {
-        "write": "ask",
-        "edit": "ask"
-      }
-    },
-    "clojure_skill_builder": {
-      "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:./_build/clojure_skill_builder.md}",
-      "tools": {
-        "write": true,
-        "edit": true,
-        "read": true,
-        "bash": true,
-        "todowrite": false,
-        "todoread": false
-      },
-      "permission": {
-        "write": "ask",
-        "edit": "ask"
-      }
-    },
-
-    "shortcut_cli_builder": {
-      "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:./_build/shortcut_cli_builder.md}",
+      "prompt": "{file:./clojure_build.md}",
       "tools": {
         "write": true,
         "edit": true,
