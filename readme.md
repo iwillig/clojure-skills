@@ -8,12 +8,20 @@ fragments for AI coding agents.
 coded then it should be. I need a test bed for the project and as a
 result some things are messy. Contributions welcome!
 
-**Note** Note this project requires
-[clojure-mcp](https://github.com/bhauman/clojure-mcp) to be
-installed. The prompts are dependent on the clojure mcp system. We
-should clean this up.
+**Note** This project works best with
+[clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light)
+installed. The prompts and skills reference the `clj-nrepl-eval` tool
+for REPL-driven development workflows.
 
-https://github.com/bhauman/clojure-mcp?tab=readme-ov-file#for-depsedn-projects
+Install via bbin:
+```bash
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0 \
+  --as clj-nrepl-eval \
+  --main-opts '["-m" "clojure-mcp-light.nrepl-eval"]'
+```
+
+See: https://github.com/bhauman/clojure-mcp-light#readme
 
 **Quick Links:**
 
@@ -251,7 +259,7 @@ clojure-skills skill list -c language
 
 ```
 language/              - Core Clojure concepts
-clojure_mcp/           - MCP integration
+clojure_mcp/           - REPL tools (clj-nrepl-eval)
 libraries/async/       - core.async, manifold
 libraries/cli/         - cli-matic
 libraries/database/    - next.jdbc, honeysql, ragtime, sqlite
@@ -686,8 +694,8 @@ skills/
 │   ├── clojure_intro.md      - Immutability, functions, data structures
 │   └── clojure_repl.md       - REPL-driven development
 │
-├── clojure_mcp/           # MCP integration (1 skill)
-│   └── clojure_eval.md       - Using clojure_eval tool
+├── clojure_mcp/           # REPL tools (1 skill)
+│   └── clojure_eval.md       - Using clj-nrepl-eval for REPL evaluation
 │
 ├── libraries/             # Library guides (50+ skills)
 │   ├── async/
