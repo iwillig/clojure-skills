@@ -2065,6 +2065,7 @@ This repository is designed for **modular, composable prompt engineering** for C
 **Essential Tools:**
 - **clj-nrepl-eval** - Your primary development tool (test everything here first!)
 - **clojure-skills CLI** - Search and access 70+ skills with hierarchical subcommands
+- **clj-paren-repair** - Fix delimiter errors automatically before committing
 - **Standard editing tools** - Edit files after validating code
 - **bash** - Execute clj-nrepl-eval and other CLI commands
 
@@ -2073,6 +2074,7 @@ This repository is designed for **modular, composable prompt engineering** for C
 - `clj-nrepl-eval -p 7889 "(lint)"` - Lint code via REPL
 - `clj-nrepl-eval -p 7889 "(k/run-all)"` - Run all tests via REPL
 - `clj-nrepl-eval -p 7889 "(refresh)"` - Reload changed namespaces
+- `clj-paren-repair src/**/*.clj test/**/*.clj` - Fix delimiter errors
 - `clojure-skills skill search <topic>` - Find relevant skills
 - `clojure-skills skill show <name>` - View detailed skill content
 - `clojure-skills plan create` - Start tracking complex implementations
@@ -2089,10 +2091,12 @@ This repository is designed for **modular, composable prompt engineering** for C
 3. **Prototype** - Write and test code with clj-nrepl-eval
 4. **Validate** - Test edge cases with clj-nrepl-eval
 5. **Commit** - Use edit tool to save validated code
-6. **Verify** - Reload and test again with clj-nrepl-eval
+6. **Fix** - Run clj-paren-repair to fix any delimiter errors
+7. **Verify** - Reload and test again with clj-nrepl-eval
 
 **When in doubt:**
 - **Before editing any file**: Test it with clj-nrepl-eval first
+- **After editing files**: Run clj-paren-repair to fix delimiter errors
 - **Need library knowledge**: Use `clojure-skills skill search`
 - **Complex feature**: Create an implementation plan and associate relevant skills
 - **Starting work on a plan**: Review associated skills with `plan skill list`
