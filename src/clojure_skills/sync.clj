@@ -4,6 +4,7 @@
    [clj-yaml.core :as yaml]
    [clojure-skills.config :as config]
    [clojure-skills.db.core]
+   [clojure-skills.db.prompt-skills :as prompt-skills]
    [clojure-skills.logging :as log]
    [clojure.java.io :as io]
    [clojure.string :as str]
@@ -95,6 +96,17 @@
            (map #(str (.getPath ^File %)))
            (sort)))))
 
+(defn scan-prompt-config-files
+  "Scan prompt_configs directory and return list of YAML config file paths."
+  [configs-dir]
+  (let [dir (io/file configs-dir)]
+    (when (.exists dir)
+      (->> (file-seq dir)
+           (filter #(and (.isFile ^File %)
+                         (str/ends-with? (.getName ^File %) ".yaml")))
+           (map #(str (.getPath ^File %)))
+           (sort)))))
+
 (defn parse-skill-file
   "Parse a skill markdown file and extract metadata."
   [path]
@@ -134,6 +146,20 @@
      :file_hash file-hash ;; Using snake_case for SQL compatibility
      :size_bytes size-bytes
      :token_count token-count}))
+
+(defn parse-prompt-config-file
+  "Parse a prompt YAML configuration file and extract skill associations."
+  [path]
+  (let [content (slurp path)
+        config (yaml/parse-string content)
+        filename (last (str/split path #"/"))
+        name (str/replace filename #"\.yaml$" "")]
+    {:path path
+     :name name
+     :title (get config :title)
+     :author (get config :author)
+     :skills (get config :skills [])
+     :content content}))
 
 (defn get-skill-by-path
   "Get skill from database by path."
@@ -235,11 +261,69 @@
     (log/log-success "Prompts sync complete" :count (count prompt-files))
     (println "Prompts sync complete.")))
 
+(defn get-prompt-by-name
+  "Get prompt from database by name."
+  [db name]
+  (jdbc/execute-one! db ["SELECT * FROM prompts WHERE name = ?" name]))
+
+(defn sync-prompt-skills-for-config
+  "Sync prompt skills from a YAML configuration file to database."
+  [db config-path]
+  (try
+    (let [config-data (parse-prompt-config-file config-path)
+          prompt-name (:name config-data)
+          skill-paths (:skills config-data)
+          prompt-record (get-prompt-by-name db prompt-name)]
+      (if prompt-record
+        (do
+          ;; Remove existing skill associations
+          (prompt-skills/dissociate-all-skills-from-prompt db (:prompts/id prompt-record))
+          
+          ;; Add new skill associations
+          (doseq [[idx skill-path] (map vector (range) skill-paths)]
+            (let [skill-record (prompt-skills/get-skill-by-path db skill-path)]
+              (if skill-record
+                (do
+                  (prompt-skills/associate-skill-with-prompt 
+                   db {:prompt-id (:prompts/id prompt-record)
+                       :skill-id (:skills/id skill-record)
+                       :position idx})
+                  (println (format "  Associated skill: %s -> %s (position %d)" 
+                                 prompt-name (:skills/name skill-record) idx)))
+                (do
+                  (log/log-warning "Skill not found in database" :path skill-path :prompt prompt-name)
+                  (println (format "  WARNING: Skill not found: %s" skill-path))))))
+          
+          (log/log-info "Synced prompt skills" :prompt prompt-name :skills-count (count skill-paths))
+          (println (format "  Synced skills for prompt: %s (%d skills)" prompt-name (count skill-paths))))
+        (do
+          (log/log-warning "Prompt not found in database" :name prompt-name :config config-path)
+          (println (format "  WARNING: Prompt '%s' not found in database" prompt-name)))))
+    (catch Exception e
+      (log/log-error "Error syncing prompt skills" :path config-path :error (.getMessage e))
+      (println (format "  ERROR syncing prompt skills from %s: %s" config-path (.getMessage e))))))
+
+(defn sync-all-prompt-skills
+  "Sync all prompt skills from prompt_configs directory to database."
+  [db config]
+  (let [project-root (config/expand-path (or (get-in config [:project :root])
+                                             (System/getProperty "user.dir")))
+        configs-dir (str project-root "/prompt_configs")
+        config-files (scan-prompt-config-files configs-dir)]
+    (log/log-info "Starting prompt skills sync" :count (count config-files) :directory configs-dir)
+    (println (format "Syncing prompt skills from %d config files in %s..." (count config-files) configs-dir))
+    (when (seq config-files)
+      (doseq [config-file config-files]
+        (sync-prompt-skills-for-config db config-file)))
+    (log/log-success "Prompt skills sync complete" :count (count config-files))
+    (println "Prompt skills sync complete.")))
+
 (defn sync-all
-  "Sync all skills and prompts to database."
+  "Sync all skills, prompts, and prompt skills to database."
   ([db config]
    (sync-all-skills db config)
-   (sync-all-prompts db config))
+   (sync-all-prompts db config)
+   (sync-all-prompt-skills db config))
   ([]
    (let [config (config/load-config)
          db (clojure-skills.db.core/get-db config)]
