@@ -370,3 +370,26 @@
         (let [{:keys [output]} (capture-output
                                 #(cli/cmd-complete-task {:_arguments ["1"]}))]
           (is (re-find #"Completed task" output)))))))
+
+(deftest task-uncomplete-subcommand-test
+  (testing "task uncomplete subcommand marks task as not done"
+    (binding [cli/*exit-fn* mock-exit]
+      (with-redefs [cli/load-config-and-db mock-load-config-and-db]
+        ;; Create plan (will get ID 1)
+        (cli/cmd-create-plan {:name "uncomplete-task-plan" :title "Test"
+                              :description nil :content nil :status nil
+                              :created-by nil :assigned-to nil})
+        ;; Create task list for plan 1 (will get ID 1)
+        (cli/cmd-create-task-list {:_arguments ["1"]
+                                   :name "Test List"
+                                   :description nil :position nil})
+        ;; Create task in task list 1 (will get ID 1)
+        (cli/cmd-create-task {:_arguments ["1"]
+                              :name "Uncomplete Test Task"
+                              :description nil :position nil :assigned-to nil})
+        ;; First complete the task (task ID 1)
+        (cli/cmd-complete-task {:_arguments ["1"]})
+        ;; Then uncomplete it (task ID 1)
+        (let [{:keys [output]} (capture-output
+                                #(cli/cmd-uncomplete-task {:_arguments ["1"]}))]
+          (is (re-find #"Marked task as not completed" output)))))))

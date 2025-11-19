@@ -414,6 +414,7 @@ clojure-skills task-list show 1                            # Show task list deta
 clojure-skills task-list task create 1 --name "Task name"  # 1 = task list ID
 clojure-skills task show 1                                 # Show task details
 clojure-skills task complete 1                             # 1 = task ID
+clojure-skills task uncomplete 1                           # 1 = task ID
 
 # Delete commands (all require --force flag)
 clojure-skills plan delete 1 --force                       # Deletes plan + lists + tasks
@@ -1094,6 +1095,7 @@ Complete reference for all task tracking commands:
 | `task-list task create` | `<TASK-LIST-ID>` | `--name` | `--description`, `--position`, `--assigned-to` | Create task in a task list |
 | `task show` | `<TASK-ID>` | None | None | Show detailed task information |
 | `task complete` | `<TASK-ID>` | None | None | Mark task as completed |
+| `task uncomplete` | `<TASK-ID>` | None | None | Mark task as not completed |
 | `task delete` | `<TASK-ID>` | `--force` | None | Delete a single task |
 | `plan result create` | `<PLAN-ID>` | None | `--outcome`, `--summary`, `--challenges`, `--solutions`, `--lessons-learned`, `--metrics` | Create a result for a completed plan |
 | `plan result show` | `<PLAN-ID>` | None | None | Show plan result |
@@ -1807,6 +1809,7 @@ For complex multi-step implementations, use the task tracking system. See [Task 
 6. **Track progress as you work:**
    ```bash
    clojure-skills task complete <TASK-ID>    # Mark tasks complete
+   clojure-skills task uncomplete <TASK-ID>  # Made a mistake? Mark as not complete
    clojure-skills plan show <PLAN-ID>        # View progress
    clojure-skills plan complete <PLAN-ID>    # When finished
    ```

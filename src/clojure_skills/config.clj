@@ -11,7 +11,9 @@
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str])
-  (:import (java.io File)))
+  (:import
+   (java.io
+    File)))
 
 (set! *warn-on-reflection* true)
 
@@ -216,20 +218,20 @@
           (let [command-key (keyword (:command cmd))
                 new-path (conj path command-key)]
             (if (:subcommands cmd)
-               ;; For commands with subcommands, recursively filter them
+              ;; For commands with subcommands, recursively filter them
               (let [filtered-subcommands (filter-commands (:subcommands cmd) permissions new-path)]
-                (seq filtered-subcommands)) ; Only keep if there are subcommands left
-               ;; For leaf commands, check permissions
+                (seq filtered-subcommands)) ;; Only keep if there are subcommands left
+              ;; For leaf commands, check permissions
               (command-enabled? permissions new-path)))))
        (mapv
         (fn [cmd]
           (let [command-key (keyword (:command cmd))
                 new-path (conj path command-key)]
             (if (:subcommands cmd)
-               ;; For commands with subcommands, recursively filter them
+              ;; For commands with subcommands, recursively filter them
               (let [filtered-subcommands (filter-commands (:subcommands cmd) permissions new-path)]
                 (assoc cmd :subcommands filtered-subcommands))
-               ;; For leaf commands, keep as is
+              ;; For leaf commands, keep as is
               cmd))))))
 
 (defn init-config

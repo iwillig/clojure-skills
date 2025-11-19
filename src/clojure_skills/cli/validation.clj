@@ -93,6 +93,11 @@
   [:map
    [:id :int]])
 
+(def uncomplete-task-args-schema
+  "Schema for uncomplete-task command arguments."
+  [:map
+   [:id :int]])
+
 (def delete-plan-args-schema
   "Schema for delete-plan command arguments."
   [:map

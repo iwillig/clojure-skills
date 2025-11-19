@@ -527,7 +527,7 @@
                    (when (:skills/title skill)
                      (println (format "    %s" (:skills/title skill)))))))
 
-;; Show plan result if exists
+             ;; Show plan result if exists
              (let [result (plan-results/get-result-by-plan-id db (:implementation_plans/id plan))]
                (when result
                  (println)
@@ -815,6 +815,25 @@
              (print-error (str "Task not found: " task-id))
              (*exit-fn* 1))))))))
 
+(defn cmd-uncomplete-task
+  "Mark a task as not completed."
+  [{:keys [_arguments]}]
+  (let [task-id (first _arguments)]
+    (validate-non-blank task-id "Task ID cannot be empty")
+    (handle-command-errors
+     "Uncomplete task"
+     (fn []
+       (let [[_config db] (load-config-and-db)
+             ;; Validate and coerce the ID
+             args (v/coerce-and-validate! v/uncomplete-task-args-schema {:id task-id})
+             task-id-coerced (:id args)
+             task (tasks/uncomplete-task db task-id-coerced)]
+         (if task
+           (print-success (str "Marked task as not completed: " (:tasks/name task)))
+           (do
+             (print-error (str "Task not found: " task-id))
+             (*exit-fn* 1))))))))
+
 (defn cmd-delete-task
   "Delete a task."
   [{:keys [_arguments force]}]
@@ -982,7 +1001,7 @@
                     :solutions solutions
                     :lessons-learned lessons-learned
                     :metrics metrics})
-;; Build result data (remove nil values, convert kebab-case keys to snake_case)
+             ;; Build result data (remove nil values, convert kebab-case keys to snake_case)
              result-data (-> args
                              (clojure.set/rename-keys {:plan-id :plan_id
                                                        :lessons-learned :lessons_learned})
@@ -1183,17 +1202,17 @@
                :required true}]
        :runs cmd-search-prompts}
 
-       {:command "list"
-        :description "List all prompts with metadata"
-        :runs cmd-list-prompts}
+      {:command "list"
+       :description "List all prompts with metadata"
+       :runs cmd-list-prompts}
 
-       {:command "show"
-        :description "Display prompt content with metadata and associated skills"
-        :args [{:arg "name"
-                :as "Prompt name"
-                :type :string
-                :required true}]
-        :runs cmd-show-prompt}]}
+      {:command "show"
+       :description "Display prompt content with metadata and associated skills"
+       :args [{:arg "name"
+               :as "Prompt name"
+               :type :string
+               :required true}]
+       :runs cmd-show-prompt}]}
 
     {:command "plan"
      :description "Implementation plan management"
@@ -1521,6 +1540,15 @@
                :required true
                :short 0}]
        :runs cmd-complete-task}
+
+      {:command "uncomplete"
+       :description "Mark task as not completed"
+       :args [{:arg "task-id"
+               :as "Task ID"
+               :type :int
+               :required true
+               :short 0}]
+       :runs cmd-uncomplete-task}
 
       {:command "delete"
        :description "Delete a task (requires --force)"
