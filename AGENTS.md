@@ -212,6 +212,60 @@ clojure-skills skill show "http_kit"
 # (Now you know http-kit patterns to test with clj-nrepl-eval)
 ```
 
+### clj-paren-repair - Delimiter Error Detection and Repair
+
+**The `clj-paren-repair` tool fixes delimiter errors and formats Clojure files automatically.**
+
+**When to use:**
+- Before committing files with potential delimiter errors
+- After editing Clojure code to ensure balanced delimiters
+- As part of automated workflows to catch syntax errors
+- When you suspect mismatched or missing delimiters
+
+**How it works:**
+```bash
+# Fix delimiter errors in one or more files
+clj-paren-repair src/my_namespace/core.clj
+
+# Fix multiple files at once
+clj-paren-repair src/my_namespace/*.clj
+
+# Show help
+clj-paren-repair --help
+```
+
+**Features:**
+- **Delimiter error detection** - Identifies missing or mismatched parentheses, brackets, and braces
+- **Automatic repair** - Fixes delimiter errors intelligently using parinfer-style rules
+- **cljfmt formatting** - Applies standard Clojure formatting after repair
+- **Multiple file support** - Process many files in a single command
+
+**Common use cases:**
+```bash
+# Before committing, fix all delimiter errors in src/
+clj-paren-repair src/**/*.clj
+
+# Fix a specific file after editing
+clj-paren-repair src/clojure_skills/cli.clj
+
+# Fix all files in a directory
+clj-paren-repair src/clojure_skills/db/*.clj
+```
+
+**When to use clj-paren-repair:**
+- After manual edits that may have introduced delimiter errors
+- Before running tests to ensure syntax is valid
+- As part of CI pipeline (before linting/testing)
+- When clj-kondo reports delimiter errors
+
+**Integration with development workflow:**
+1. Edit code with standard tools
+2. Run `clj-paren-repair` on modified files
+3. Run `bb lint` to check for other issues
+4. Run `bb test` to verify functionality
+
+**Note:** This tool modifies files in place. Ensure you have committed your changes or have backups before running it.
+
 ### Other Tools Available
 
 **File operations:**
@@ -232,7 +286,8 @@ clojure-skills skill show "http_kit"
 1. Use `clojure-skills search` to find relevant knowledge
 2. Use `clj-nrepl-eval` (via bash) to prototype and test code
 3. Use standard file editing tools to commit working code to files
-4. Use `clj-nrepl-eval` again to reload and verify changes
+4. Use `clj-paren-repair` to fix any delimiter errors
+5. Use `clj-nrepl-eval` again to reload and verify changes
 
 ---
 
@@ -314,6 +369,7 @@ clojure-skills/
 | **clj-kondo** | Linter | `.clj-kondo/` |
 | **clojure-lsp** | Language server (static analysis, refactoring) | - |
 | **cljstyle** | Code formatter | - |
+| **clj-paren-repair** | Delimiter error detection and repair | - |
 | **typos** | Spell checker | `_typos.toml` |
 | **nRepl** | REPL server | `:nrepl` alias in `deps.edn` |
 | **pandoc** | Document builder | `Makefile` |
@@ -1498,16 +1554,19 @@ clj-nrepl-eval -p 7889 "(require '[dev :refer :all])"
 # 5. Run tests via REPL
 clj-nrepl-eval -p 7889 "(k/run-all)"
 
-# 6. Lint code via REPL
+# 6. Fix any delimiter errors
+clj-paren-repair src/**/*.clj test/**/*.clj
+
+# 7. Lint code via REPL
 clj-nrepl-eval -p 7889 "(lint)"
 
-# 7. Format code
+# 8. Format code
 bb fmt
 
-# 8. Check spelling
+# 9. Check spelling
 bb typos
 
-# 9. Run full CI pipeline (before committing)
+# 10. Run full CI pipeline (before committing)
 bb ci
 ```
 

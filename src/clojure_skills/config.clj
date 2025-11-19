@@ -7,7 +7,6 @@
   3. ~/.config/clojure-skills/config.edn
   4. Built-in defaults"
   (:require
-   [clojure-skills.logging :as log]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str])
@@ -68,8 +67,7 @@
     (when (and config-path (.exists (io/file config-path)))
       (try
         (edn/read-string (slurp config-path))
-        (catch Exception e
-          (log/log-warning "Failed to load project config file" :path config-path :error (.getMessage e))
+        (catch Exception _e
           nil)))))
 
 (defn ensure-project-config-dir
@@ -125,8 +123,7 @@
     (when (.exists (io/file config-path))
       (try
         (edn/read-string (slurp config-path))
-        (catch Exception e
-          (log/log-warning "Failed to load config file" :path config-path :error (.getMessage e))
+        (catch Exception _e
           nil)))))
 
 (defn get-env-overrides

@@ -13,7 +13,6 @@
    [clojure-skills.db.plan-skills :as plan-skills]
    [clojure-skills.db.plans :as plans]
    [clojure-skills.db.tasks :as tasks]
-   [clojure-skills.logging :as log]
    [clojure-skills.search :as search]
    [clojure-skills.sync :as sync]
    [clojure.set :as set]
@@ -55,23 +54,19 @@
 
 (defn print-success
   [msg]
-  (log/log-success msg)
   (println (bling/bling [:bold :green "SUCCESS:"] msg)))
 
 (defn print-error
   [msg]
-  (log/log-error msg)
   (println (bling/bling [:bold :red "ERROR:"] msg)))
 
 (defn print-info
   [msg]
-  (log/log-info msg)
   (println (bling/bling [:bold :blue "INFO:"] msg)))
 
 (defn print-error-with-exception
   "Print error message with pretty-printed exception details."
   [msg e]
-  (log/log-exception msg e)
   (println (bling/bling [:bold :red "ERROR:"] msg))
   (ex/print-exception e))
 

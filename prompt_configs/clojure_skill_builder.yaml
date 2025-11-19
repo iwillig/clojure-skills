@@ -12,8 +12,5 @@ fragments:
   - skills/testing/clojure_test.md
   - skills/tooling/babashka.md
   - skills/tooling/clojure_mcp_light.md
-
-  - skills/libraries/logging/mulog.md
-
   - skills/libraries/data_formats/pretty.md
 references: []

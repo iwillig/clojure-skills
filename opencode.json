@@ -7,7 +7,7 @@
 
     "clojure_build": {
       "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:./clojure_build.md}",
+      "prompt": "{file:./_build/clojure_build.md}",
       "tools": {
         "write": true,
         "edit": true,

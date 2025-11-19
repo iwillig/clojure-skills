@@ -5,7 +5,6 @@
    [clojure-skills.config :as config]
    [clojure-skills.db.core]
    [clojure-skills.db.prompt-fragments :as fragments]
-   [clojure-skills.logging :as log]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [next.jdbc :as jdbc]
@@ -42,8 +41,7 @@
                 content-text (str/join "\n" content-lines)]
             (try
               [(yaml/parse-string frontmatter-text) content-text]
-              (catch Exception e
-                (log/log-warning "Failed to parse frontmatter" :error (.getMessage e))
+              (catch Exception _e
                 [nil content])))
           [nil content]))
       [nil content])))
@@ -187,15 +185,11 @@
           existing (get-skill-by-path db skill-path)]
       (if (and existing
                (= (:skills/file_hash existing) (:file_hash skill-data)))
-        (do
-          (log/log-info "Skipped skill sync (unchanged)" :path skill-path)
-          (println "  Skipped (unchanged):" skill-path))
+        (println "  Skipped (unchanged):" skill-path)
         (do
           (upsert-skill db skill-data)
-          (log/log-info "Synced skill" :path skill-path)
           (println "  Synced:" skill-path))))
     (catch Exception e
-      (log/log-error "Error syncing skill" :path skill-path :error (.getMessage e))
       (println "  ERROR syncing" skill-path ":" (.getMessage e)))))
 
 (defn find-prompt-content-file
@@ -231,15 +225,11 @@
           existing (get-prompt-by-name db prompt-name)]
       (if (and existing
                (= (:prompts/file_hash existing) file-hash))
-        (do
-          (log/log-info "Skipped prompt sync (unchanged)" :name prompt-name)
-          (println "  Skipped (unchanged):" prompt-name))
+        (println "  Skipped (unchanged):" prompt-name)
         (do
           (upsert-prompt db prompt-data)
-          (log/log-info "Synced prompt from config" :name prompt-name)
           (println "  Synced:" prompt-name))))
     (catch Exception e
-      (log/log-error "Error syncing prompt from config" :path config-path :error (.getMessage e))
       (println "  ERROR syncing" config-path ":" (.getMessage e)))))
 
 (defn sync-all-skills
@@ -249,11 +239,9 @@
                                              (System/getProperty "user.dir")))
         skills-dir (str project-root "/" (get-in config [:project :skills-dir]))
         skill-files (scan-skill-files skills-dir)]
-    (log/log-info "Starting skills sync" :count (count skill-files) :directory skills-dir)
     (println (format "Syncing %d skills from %s..." (count skill-files) skills-dir))
     (doseq [skill-file skill-files]
       (sync-skill db skill-file))
-    (log/log-success "Skills sync complete" :count (count skill-files))
     (println "Skills sync complete.")))
 
 (defn sync-all-prompts
@@ -264,11 +252,9 @@
                                              (System/getProperty "user.dir")))
         configs-dir (str project-root "/prompt_configs")
         config-files (scan-prompt-config-files configs-dir)]
-    (log/log-info "Starting prompts sync from configs" :count (count config-files) :directory configs-dir)
     (println (format "Syncing %d prompts from %s..." (count config-files) configs-dir))
     (doseq [config-file config-files]
       (sync-prompt-from-config db config-file))
-    (log/log-success "Prompts sync complete" :count (count config-files))
     (println "Prompts sync complete.")))
 
 (defn resolve-skill-path
@@ -322,7 +308,6 @@
                   (println (format "  Associated skill: %s -> %s (position %d)"
                                    prompt-name (:skills/name skill-record) idx)))
                 (do
-                  (log/log-warning "Skill not found in database" :path skill-path :prompt prompt-name)
                   (println (format "  WARNING: Skill not found: %s" skill-path))))))
 
           ;; Clear existing prompt references
@@ -336,14 +321,9 @@
             :target_fragment_id (:prompt_fragments/id fragment)
             :reference_type "fragment"
             :position 1})
-
-          (log/log-info "Synced prompt fragment" :prompt prompt-name :skills-count (count fragment-paths))
           (println (format "  Synced fragment for prompt: %s (%d skills)" prompt-name (count fragment-paths))))
-        (do
-          (log/log-warning "Prompt not found in database" :name prompt-name :config config-path)
-          (println (format "  WARNING: Prompt '%s' not found in database" prompt-name)))))
+        (println (format "  WARNING: Prompt '%s' not found in database" prompt-name))))
     (catch Exception e
-      (log/log-error "Error syncing prompt fragment" :path config-path :error (.getMessage e))
       (println (format "  ERROR syncing prompt fragment from %s: %s" config-path (.getMessage e))))))
 
 (defn sync-prompt-references-for-config
@@ -403,17 +383,10 @@
                   
                   (println (format "  Referenced skill: %s -> %s (position %d)"
                                    prompt-name (:skills/name skill-record) (+ 100 idx))))
-                (do
-                  (log/log-warning "Referenced skill not found in database" :path skill-path :prompt prompt-name)
-                  (println (format "  WARNING: Referenced skill not found: %s" skill-path))))))
-          
-          (log/log-info "Synced prompt references" :prompt prompt-name :references-count (count reference-paths))
+                (println (format "  WARNING: Referenced skill not found: %s" skill-path)))))
           (println (format "  Synced references for prompt: %s (%d references)" prompt-name (count reference-paths))))
-        (do
-          (log/log-warning "Prompt not found in database" :name prompt-name :config config-path)
-          (println (format "  WARNING: Prompt '%s' not found in database" prompt-name)))))
+        (println (format "  WARNING: Prompt '%s' not found in database" prompt-name))))
     (catch Exception e
-      (log/log-error "Error syncing prompt references" :path config-path :error (.getMessage e))
       (println (format "  ERROR syncing prompt references from %s: %s" config-path (.getMessage e))))))
 
 (defn sync-all-prompt-skills
@@ -423,14 +396,12 @@
                                              (System/getProperty "user.dir")))
         configs-dir (str project-root "/prompt_configs")
         config-files (scan-prompt-config-files configs-dir)]
-    (log/log-info "Starting prompt fragments and references sync" :count (count config-files) :directory configs-dir)
     (println (format "Syncing prompt fragments and references from %d config files in %s..." (count config-files) configs-dir))
     (when (seq config-files)
       (doseq [config-file config-files]
         ;; Sync both fragments and references for each config
         (sync-prompt-fragments-for-config db config-file)
         (sync-prompt-references-for-config db config-file)))
-    (log/log-success "Prompt fragments and references sync complete" :count (count config-files))
     (println "Prompt fragments and references sync complete.")))
 
 (defn sync-all

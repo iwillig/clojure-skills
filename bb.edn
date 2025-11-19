@@ -116,11 +116,10 @@
            (fs/create-dirs "_build")
 
            ;; Use CLI to generate prompt content
-           ;; Redirect stderr to /dev/null to suppress mulog output
            (let [result (p/shell {:out :string
                                   :err :string
                                   :continue true}
-                                 (str "bb main prompt show " name " 2>/dev/null"))]
+                                 (str "bb main prompt show " name))]
              (if (zero? (:exit result))
                (let [content (:out result)
                      cleaned (strip-ansi content)]
