@@ -8,25 +8,12 @@ fragments for AI coding agents.
 coded then it should be. I need a test bed for the project and as a
 result some things are messy. Contributions welcome!
 
-**Note** This project works best with
-[clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light)
-installed. The prompts and skills reference the `clj-nrepl-eval` tool
-for REPL-driven development workflows.
-
-Install via bbin:
-```bash
-bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0
-bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0 \
-  --as clj-nrepl-eval \
-  --main-opts '["-m" "clojure-mcp-light.nrepl-eval"]'
-```
-
-See: https://github.com/bhauman/clojure-mcp-light#readme
-
 **Quick Links:**
 
-- [Installation](#installation) - Get started in 5 minutes
-- [CLI Usage](#cli-usage) - Search and explore 73+ skills
+- [Quick Start](#quick-start) - Get started in 5 minutes
+- [Installation](#installation) - Detailed installation guide
+- [CLI Usage](#cli-usage) - Search and explore 78 skills
+- [REPL-Driven Development](#repl-driven-development-with-mcp-light) - Using clj-nrepl-eval
 - [For LLM Agents](AGENTS.md) - Comprehensive agent guide
 - [Task Tracking](#task-tracking) - Manage complex implementations
 
@@ -34,7 +21,7 @@ See: https://github.com/bhauman/clojure-mcp-light#readme
 
 ## What Is This?
 
-**Clojure Skills** is a curated collection of 75 skills covering
+**Clojure Skills** is a curated collection of 78 skills covering
 Clojure development, organized in a SQLite database with full-text
 search. Each skill is a focused markdown document teaching a specific
 topic:
@@ -50,94 +37,189 @@ complete teaching prompts for AI agents.
 **Core features:**
 
 - Full-text search with SQLite FTS5
-- 75 skills across 29 categories
+- 78 skills across 29 categories
 - CLI tool for instant access
 - Task tracking with searchable plan summaries for complex implementations
 - Build system for composing custom prompts
+- **REPL-driven development workflow with clj-nrepl-eval**
+
+### Designed for REPL-Driven Development
+
+This project is built around [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light), 
+which provides `clj-nrepl-eval` - a command-line tool for evaluating Clojure code via nREPL. 
+**All skills and prompts assume you're using this workflow.**
+
+**Why MCP-light?**
+
+- **Instant feedback** - Evaluate code directly from command line
+- **Test before committing** - Validate code in REPL before editing files
+- **AI agent integration** - Perfect for LLM-driven development
+- **Automatic delimiter repair** - Fixes common syntax errors
+- **Persistent sessions** - State maintained across invocations
+
+**Install MCP-light:**
+
+```bash
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0 \
+  --as clj-nrepl-eval \
+  --main-opts '["-m" "clojure-mcp-light.nrepl-eval"]'
+```
+
+See the [REPL-Driven Development](#repl-driven-development-with-mcp-light) section below for details.
+
+---
+
+## Quick Start
+
+Get started searching and using skills in 5 minutes:
+
+### 1. Install Clojure and Babashka (2 minutes)
+
+```bash
+# macOS
+brew install clojure babashka
+
+# Fedora/RHEL/CentOS
+sudo dnf install clojure java-latest-openjdk
+
+# Ubuntu/Debian
+sudo apt install clojure openjdk-21-jdk
+```
+
+**Verify installation:**
+
+```bash
+clojure --version
+# Should show: Clojure CLI version...
+
+bb --version
+# Should show: babashka v...
+```
+
+### 2. Install MCP-light for REPL workflow (1 minute)
+
+```bash
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0 \
+  --as clj-nrepl-eval \
+  --main-opts '["-m" "clojure-mcp-light.nrepl-eval"]'
+```
+
+**Verify installation:**
+
+```bash
+clj-nrepl-eval --help
+# Should show: clojure-mcp-light nREPL client...
+```
+
+### 3. Install clojure-skills CLI (1 minute)
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/clojure-skills.git
+cd clojure-skills
+
+# Initialize database
+clojure -M:main db init
+
+# Sync skills to database
+clojure -M:main db sync
+```
+
+**Verify installation:**
+
+```bash
+clojure -M:main db stats
+# Should show: 78 skills, 7 prompts, 29 categories
+```
+
+### 4. Search for a skill (30 seconds)
+
+```bash
+clojure -M:main skill search "validation"
+# Shows: malli, spec, schema skills
+```
+
+### 5. View a skill (30 seconds)
+
+```bash
+clojure -M:main skill show malli -c libraries/data_validation
+# Displays full Malli validation skill
+```
+
+**Next steps:**
+- See [CLI Usage](#cli-usage) for all available commands
+- Read [REPL-Driven Development](#repl-driven-development-with-mcp-light) to use clj-nrepl-eval
+- Explore [Building Prompts](#building-prompts) to compose custom agents
 
 ---
 
 ## Installation
 
-Right now you have to build this locally. You will need GraalVM,
-clojure and Babashka. You can install those on MacOS using the
-following command,
-
-
-```bash
-brew install clojure babashka pandoc yq typos-cli
-```
-
-
-To manage your GraalVM, we encourage people to use [SdkMan](https://sdkman.io/)
-
-If you are using SdkMan, you can set the correct JVM with the following command.
-
-```bash
-sdk env
-```
-
-## Development
-
-Development tasks are driven by Babashka.
-
-You can see all of the development tasks
-
-```bash
-bb tasks
-```
-
-## Agentic Coding
-
-Included in this project is an [OpenCode](https://opencode.ai/)
-configuration file. You can use this to configure the project for your
-agentic editor. You will need to
-
-```bash
-bb nrepl
-```
-
-Next, lets build all of the prompts. This is a legacy command and will
-be removed soon.
-
-```bash
-bb build-all
-```
-
-You can now start opencode from the project home,
-
-```
-opencode
-```
-
-You should be able to tab into the clojure-build or the
-clojure-skill-builder agent. These are custom agents that are designed
-to work effectively with the clojure programming language.
-
-The clojure-skill-builder is designed to build a Skill and test its
-skill with the REPl. This makes adding a skill a one shot operation.
-
-
+Detailed installation instructions for different use cases.
 
 ### Prerequisites
 
-**System dependencies:**
+**For basic usage (searching skills):**
+- Clojure CLI
+- Babashka (optional but recommended)
+- MCP-light (clj-nrepl-eval)
+
+**For building prompts:**
+- All of the above, plus:
+- pandoc
+- yq
+
+**For development (contributing):**
+- All of the above, plus:
+- GraalVM (for native binary)
+- typos-cli (spell checking)
+
+### System Dependencies
+
+**macOS (Homebrew):**
 
 ```bash
-# macOS (Homebrew)
 brew install clojure babashka pandoc yq typos-cli
 
 # Or use the Brewfile
 brew bundle
+```
 
-# Fedora/RHEL/CentOS
+**Fedora/RHEL/CentOS:**
+
+```bash
 sudo dnf install clojure java-latest-openjdk pandoc
+```
 
-# Ubuntu/Debian
+**Ubuntu/Debian:**
+
+```bash
 sudo apt install clojure openjdk-21-jdk pandoc
 ```
 
 **Note:** Babashka is optional but recommended for running build tasks. If you skip it, you can use `make` instead.
+
+### MCP-light Installation
+
+Install clojure-mcp-light for REPL-driven development:
+
+```bash
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0
+bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0 \
+  --as clj-nrepl-eval \
+  --main-opts '["-m" "clojure-mcp-light.nrepl-eval"]'
+```
+
+See: https://github.com/bhauman/clojure-mcp-light#readme
+
+**Verify:**
+
+```bash
+clj-nrepl-eval --version
+# Should show version information
+```
 
 ### Build and Install CLI
 
@@ -167,10 +249,10 @@ The native binary will be created at `target/clojure-skills` and can be moved to
 clojure-skills db stats
 
 # Should show:
-# - 75 skills
-# - 5 prompts
+# - 78 skills
+# - 7 prompts
 # - 29 categories
-# - ~927KB total size
+# - ~1018KB total size
 ```
 
 ---
@@ -416,6 +498,122 @@ clojure-skills db --help
 # After permissions - reset command is hidden
 clojure-skills db --help
 ```
+
+---
+
+## REPL-Driven Development with MCP-Light
+
+This project is designed around a REPL-first workflow using `clj-nrepl-eval` from 
+[clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light). **All skills and 
+prompts assume you're using this tool for interactive development.**
+
+### What is clj-nrepl-eval?
+
+`clj-nrepl-eval` is a command-line nREPL client that lets you evaluate Clojure code 
+from the terminal with automatic delimiter repair and persistent sessions.
+
+**Key features:**
+
+- **Command-line REPL** - Evaluate code without opening an editor
+- **Automatic delimiter repair** - Fixes missing/mismatched parentheses using parinfer
+- **Persistent sessions** - State maintained across command invocations
+- **Server discovery** - Automatically finds running nREPL servers
+- **Perfect for AI agents** - Ideal for LLM-driven development workflows
+
+### Quick Example
+
+```bash
+# Start an nREPL server
+bb nrepl
+# Started nREPL server on port 7889
+
+# Discover running servers
+clj-nrepl-eval --discover-ports
+# localhost:7889 (bb)
+
+# Evaluate code directly
+clj-nrepl-eval -p 7889 "(+ 1 2 3)"
+# => 6
+
+# Automatic delimiter repair
+clj-nrepl-eval -p 7889 "(defn add [x y] (+ x y"
+# Automatically fixed to: (defn add [x y] (+ x y))
+# => #'user/add
+
+# Test the function
+clj-nrepl-eval -p 7889 "(add 10 20)"
+# => 30
+```
+
+### Typical Workflow
+
+1. **Start nREPL server:**
+   ```bash
+   bb nrepl  # Starts on port 7889
+   ```
+
+2. **Explore and prototype:**
+   ```bash
+   # Discover what's available
+   clj-nrepl-eval -p 7889 "(all-ns)"
+   
+   # Test your hypothesis
+   clj-nrepl-eval -p 7889 "(require '[clojure.string :as str])"
+   clj-nrepl-eval -p 7889 "(str/upper-case \"hello\")"
+   # => "HELLO"
+   ```
+
+3. **Build incrementally:**
+   ```bash
+   # Define a function
+   clj-nrepl-eval -p 7889 "(defn validate-email [email]
+     (re-matches #\".+@.+\\..+\" email))"
+   
+   # Test it immediately
+   clj-nrepl-eval -p 7889 "(validate-email \"user@example.com\")"
+   # => "user@example.com"
+   
+   clj-nrepl-eval -p 7889 "(validate-email \"invalid\")"
+   # => nil
+   ```
+
+4. **Only after validation, edit files** - Use your editor to save validated code
+
+5. **Reload and verify:**
+   ```bash
+   clj-nrepl-eval -p 7889 "(require '[my.namespace :reload])"
+   clj-nrepl-eval -p 7889 "(my.namespace/validate-email \"test@example.com\")"
+   ```
+
+### Why This Workflow?
+
+**Traditional approach:** Write code → Save file → Reload → Test → Fix → Repeat
+
+**REPL-first approach:** Test in REPL → Validate works → Save to file → Done
+
+**Benefits:**
+
+- **Faster feedback** - Know immediately if code works
+- **Fewer errors** - Test before committing to files
+- **Better understanding** - Explore libraries interactively
+- **AI-friendly** - Perfect for LLM-generated code validation
+
+### Integration with Skills
+
+Every skill in this repository includes REPL-based examples. When learning a new
+library or technique:
+
+1. Search for the skill: `clojure-skills skill search "validation"`
+2. View the skill content: `clojure-skills skill show malli`
+3. Copy examples to test with `clj-nrepl-eval`
+4. Adapt to your use case interactively
+5. Save working code to your project
+
+### Installation
+
+See the [MCP-light Installation](#mcp-light-installation) section above for installation instructions.
+
+**Full documentation:** https://github.com/bhauman/clojure-mcp-light#readme
 
 ---
 
@@ -812,6 +1010,17 @@ The build process:
 
 ### Using Built Prompts with OpenCode
 
+[OpenCode](https://opencode.ai/) is an AI coding agent platform that lets you create custom 
+agents with specialized system prompts. It's the primary way to use clojure-skills prompts 
+for interactive development.
+
+**Why use OpenCode with clojure-skills?**
+
+- Create specialized Clojure agents with specific skill combinations
+- Interactive TUI for conversational development
+- Integrates with MCP-light for REPL-driven workflow
+- Switch between different agent configurations easily
+
 Once you've built a prompt, you can use it directly with the OpenCode CLI to create a custom agent:
 
 ```bash
@@ -1052,10 +1261,22 @@ bb ci            # Runs: clean, fmt-check, lint, typos, test
 
 ### REPL-Driven Development
 
+**Using MCP-light (Recommended):**
+
 ```bash
 # Start nREPL server (port 7889)
 bb nrepl
 
+# Evaluate code with clj-nrepl-eval
+clj-nrepl-eval -p 7889 "(+ 1 2 3)"
+# => 6
+```
+
+See the [REPL-Driven Development](#repl-driven-development-with-mcp-light) section for complete workflow.
+
+**Traditional editor integration:**
+
+```bash
 # Connect from your editor:
 # - Emacs (CIDER): M-x cider-connect
 # - VSCode (Calva): Connect to REPL
@@ -1250,9 +1471,25 @@ Contributions welcome! Areas that benefit most:
 **Before contributing:**
 
 1. Read [AGENTS.md](AGENTS.md) for development guidelines
-2. Run `bb ci` to ensure quality
-3. Test code examples in REPL
-4. Check spelling with `bb typos`
+2. Install [MCP-light](#mcp-light-installation) for REPL-driven development
+3. Run `bb ci` to ensure quality
+4. Test code examples with `clj-nrepl-eval` before committing to files
+5. Check spelling with `bb typos`
+
+**Development workflow:**
+
+```bash
+# 1. Start nREPL server
+bb nrepl
+
+# 2. Test your code with clj-nrepl-eval
+clj-nrepl-eval -p 7889 "(defn my-function [x] (process x))"
+clj-nrepl-eval -p 7889 "(my-function test-data)"
+
+# 3. Only after validation, edit files
+# 4. Run quality checks
+bb ci
+```
 
 **Note:** This project uses professional language throughout - no emojis please.
 
