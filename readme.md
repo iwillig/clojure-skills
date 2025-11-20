@@ -16,6 +16,7 @@ result some things are messy. Contributions welcome!
 - [REPL-Driven Development](#repl-driven-development-with-mcp-light) - Using clj-nrepl-eval
 - [For LLM Agents](AGENTS.md) - Comprehensive agent guide
 - [Task Tracking](#task-tracking) - Manage complex implementations
+- [Creating Skills](SKILL_CREATION_GUIDE.md) - Guide for adding new skills
 
 ---
 
@@ -1447,6 +1448,7 @@ Native binary starts instantly (no JVM startup time).
 ### Documentation
 
 - **[AGENTS.md](AGENTS.md)** - Complete guide for working with this repository
+- **[SKILL_CREATION_GUIDE.md](SKILL_CREATION_GUIDE.md)** - Step-by-step guide for creating new skills with planning system
 - **[COMPRESSION.md](COMPRESSION.md)** - Prompt compression strategies
 - **[scripts/README.md](scripts/README.md)** - Build script documentation
 

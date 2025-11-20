@@ -219,11 +219,20 @@ mkdir -p skills/libraries/your_category
 ;; - What are common mistakes or gotchas?
 ```
 
-**Check external documentation:**
-- GitHub README
-- Official documentation site
-- cljdoc.org API reference
-- Example projects using the library
+**Check and document external sources:**
+
+As you research, **track every website you visit** - you'll cite these in the Resources section.
+
+Essential sources to check:
+- **GitHub repository** - README, examples, issues, discussions
+- **Official documentation** - Main website, guides, tutorials
+- **cljdoc.org** - API reference and examples
+- **Clojars/Maven** - Dependency information and versions
+- **Blog posts** - Implementation guides and use cases
+- **Stack Overflow** - Common problems and solutions
+- **Example projects** - Real-world usage patterns
+
+**Record the full URLs** as you research - these become your citations.
 
 ### Step 3: Determine Skill Complexity
 
@@ -265,6 +274,10 @@ name: library-name-skill
 description: |
   One-line summary of WHAT it does. Use when [SPECIFIC USE CASES].
   Use when the user mentions [KEYWORDS], [PROBLEM TYPES], or [DOMAIN CONTEXTS].
+sources:
+  - https://github.com/org/library
+  - https://cljdoc.org/d/org/library
+  - https://library-docs.example.com
 ---
 ```
 
@@ -283,6 +296,15 @@ description: |
   - **WHEN**: When to use it (trigger keywords)
 - No XML tags
 
+**Sources requirements (NEW):**
+
+- **REQUIRED**: List of URLs used during research
+- Include GitHub, official docs, cljdoc, tutorials, etc.
+- Add as you research (don't wait until the end)
+- Full URLs only (no markdown formatting in frontmatter)
+- One URL per line in YAML array format
+- Minimum 1 source required (at least GitHub, official docs, or cljdoc)
+
 **Good frontmatter examples:**
 
 ```yaml
@@ -293,6 +315,10 @@ description: |
   requests/responses, defining data contracts, building form validation, schema
   validation, or when the user mentions schemas, validation, malli, data integrity,
   type checking, data contracts, or runtime validation.
+sources:
+  - https://github.com/metosin/malli
+  - https://cljdoc.org/d/metosin/malli
+  - https://blog.metosin.fi/malli-guide/
 ---
 ```
 
@@ -303,15 +329,31 @@ description: |
   Build high-performance async HTTP servers and WebSocket applications with http-kit.
   Use when creating web servers, handling HTTP requests, building REST APIs,
   WebSockets, or when the user mentions servers, HTTP, async I/O, or high concurrency.
+sources:
+  - https://github.com/http-kit/http-kit
+  - https://http-kit.github.io/
+  - https://cljdoc.org/d/http-kit/http-kit
 ---
 ```
 
-**Poor frontmatter (missing WHEN):**
+**Poor frontmatter examples:**
 
 ```yaml
 ---
 name: malli
 description: Data validation library for Clojure
+# Missing: WHEN to use (keywords/use cases)
+# Missing: sources field
+---
+```
+
+```yaml
+---
+name: malli_schema_validation
+description: |
+  Validate data structures and schemas using Malli. Use when validating API
+  requests/responses, defining data contracts, building form validation.
+# Missing: sources field - REQUIRED!
 ---
 ```
 
@@ -497,7 +539,40 @@ description: Data validation library for Clojure
 - Your own experimentation
 - Edge cases you discovered during research
 
-### Step 11: Test and Validate
+### Step 11: Add Resources Section
+
+**CRITICAL: Document all sources before finishing.**
+
+Create a comprehensive Resources section that cites every source you consulted:
+
+```markdown
+## Resources
+
+**Primary Sources:**
+- **Official Documentation**: [Malli Documentation](https://github.com/metosin/malli) - Main docs and guide
+- **GitHub Repository**: [metosin/malli](https://github.com/metosin/malli) - Source code, examples, and issues
+- **API Reference**: [cljdoc](https://cljdoc.org/d/metosin/malli/0.16.0) - Complete API documentation
+
+**Tutorials & Guides:**
+- [Getting Started with Malli](https://blog.metosin.fi/malli-guide/) - Comprehensive introduction
+- [Schema Design Patterns](https://example.com/patterns) - Best practices guide
+
+**Community Resources:**
+- [#malli on Clojurians Slack](https://clojurians.slack.com) - Community discussion
+- [Stack Overflow: malli tag](https://stackoverflow.com/questions/tagged/malli) - Common questions
+
+**Examples:**
+- [Example Project: API Validation](https://github.com/user/project) - Real-world usage
+```
+
+**Why this matters:**
+- Gives readers pathways to learn more
+- Credits the sources you used
+- Helps future skill maintainers
+- Demonstrates research thoroughness
+- Makes skill auditable and trustworthy
+
+### Step 12: Test and Validate
 
 **Complete validation checklist:**
 
@@ -522,6 +597,7 @@ bb typos skills/your_category/your_skill.md
 # - Has 3+ workflows?
 # - Has Best Practices?
 # - Has Common Issues?
+# - Has Resources section with ALL sources cited?
 
 # 6. Build and test
 bb build clojure_build  # If skill is included in a prompt
@@ -556,6 +632,10 @@ Use this template for standard-complexity skills:
 name: skill-name
 description: |
   What it does. Use when [use cases]. Use when the user mentions [keywords].
+sources:
+  - https://github.com/org/library
+  - https://cljdoc.org/d/org/library
+  - https://library.example.com/docs
 ---
 
 # Skill Name
@@ -625,9 +705,25 @@ description: |
 [Optional: Link to external resources]
 
 ## Resources
-- Official documentation
-- GitHub repository
-- API reference
+
+**REQUIRED: Cite all sources used during skill creation.**
+
+List every website, documentation page, and resource consulted:
+
+- **Official Documentation**: [Library Name Docs](https://example.com/docs) - Main documentation site
+- **GitHub Repository**: [org/library](https://github.com/org/library) - Source code and examples
+- **API Reference**: [cljdoc](https://cljdoc.org/d/org/library) - API documentation
+- **Additional Resources**:
+  - [Tutorial: Getting Started](https://blog.example.com/tutorial) - Comprehensive tutorial
+  - [Guide: Advanced Features](https://guide.example.com) - Deep dive into features
+  - [Stack Overflow: Common Issues](https://stackoverflow.com/questions/tagged/library) - Community Q&A
+
+**Citation Format:**
+- Use descriptive link text (not "click here")
+- Include full URLs
+- Add brief description after each link
+- Group by resource type (docs, tutorials, community, etc.)
+- List in order of usefulness for readers
 
 ## Summary
 [2-3 sentences summarizing key points]
@@ -648,6 +744,25 @@ description: |
 - **Must include BOTH**:
   - WHAT it does (technology/library/concept)
   - WHEN to use it (trigger keywords, use cases, problem domains)
+
+### `sources` Field (NEW - REQUIRED)
+- **Format**: YAML array of URLs
+- **Minimum**: 1 source required
+- **Priority sources** (include at least one):
+  - GitHub repository (if open source)
+  - Official documentation
+  - cljdoc page
+- **Should include** (when available):
+  - Additional documentation sites
+  - Tutorial or guide URLs
+  - Blog posts explaining usage
+  - Community resources (Slack, forums)
+- **URL requirements**:
+  - Full URLs only (https://...)
+  - No markdown formatting in frontmatter
+  - One URL per line
+  - Must be publicly accessible
+- **Update as you research**: Add URLs as you discover them, don't wait until the end
 
 **Trigger keyword categories:**
 - **Technology names**: library name, alternate names, abbreviations
@@ -728,6 +843,9 @@ Use this before publishing:
 - [ ] Description includes WHAT (technology/library)
 - [ ] Description includes WHEN (use cases, keywords)
 - [ ] Description within 1024 characters
+- [ ] Has `sources` field with minimum 1 URL
+- [ ] All sources are valid, accessible URLs
+- [ ] Sources include at least one of: GitHub repo, official docs, or cljdoc
 - [ ] No XML tags in frontmatter
 
 **Content Structure:**

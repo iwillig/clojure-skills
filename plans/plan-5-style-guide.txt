@@ -1,0 +1,117 @@
+## Created via clojure-skills plan show 5 > plan-5-style-guilde.txt
+
+# Clojure Style Guide Documentation Project
+
+## Overview
+
+This plan breaks down the [bbatsov/clojure-style-guide](https://github.com/bbatsov/clojure-style-guide) into modular, reusable skill documents for the clojure-skills repository. Each skill will be a standalone markdown file that can be composed into larger prompts.
+
+**IMPORTANT: Citation Requirement**
+
+All skills created under this plan MUST include proper attribution to the original source:
+
+- **Primary Source**: https://github.com/bbatsov/clojure-style-guide
+- **Author**: Bozhidar Batsov and contributors
+- **License**: Creative Commons Attribution 3.0 Unported License
+
+Each skill should include a citation in its Resources section:
+
+```markdown
+## Resources
+
+- [Clojure Style Guide](https://github.com/bbatsov/clojure-style-guide) - Original style guide by Bozhidar Batsov
+- [Clojure Community Style Guide](https://guide.clojure.style) - Web version
+```
+
+## Alignment with Existing Skills
+
+### Already Covered (DO NOT DUPLICATE)
+
+The following areas are already well-covered by existing skills:
+
+1. **Code Formatting Tools** (tooling/cljstyle.md)
+   - Covers automated formatting rules
+   - Indentation, whitespace, namespace formatting
+   - Configuration and usage of cljstyle
+
+2. **Linting and Static Analysis** (tooling/clj_kondo.md)
+   - Code quality checks
+   - Common anti-patterns
+
+3. **Parentheses/Delimiter Management** (tooling/clj_paren_repair.md)
+   - Delimiter repair and balancing
+
+4. **REPL and Development Workflow** (language/clojure_repl.md, clojure_mcp/clojure_eval.md)
+   - Interactive development patterns
+   - REPL-driven development
+
+### Focus Areas for New Skills
+
+These skills should focus on **human understanding and best practices** rather than tool automation:
+
+1. **Code Layout Principles** - *Why* code is formatted certain ways
+2. **Naming Conventions** - Community standards for names
+3. **Idiomatic Patterns** - The "Clojure way" of writing code
+4. **Documentation Practices** - Comments, docstrings, metadata
+5. **Organization Patterns** - How to structure code and projects
+
+### Integration Strategy
+
+New skills should:
+- Reference existing tool skills where appropriate
+- Focus on the reasoning and principles behind conventions
+- Provide examples that illustrate best practices
+- Avoid duplicating automated formatting rules (those belong in cljstyle skill)
+- Complement existing skills by explaining *why* certain patterns exist
+
+## Project Goals
+
+1. **Make style guide knowledge searchable** - Each skill can be found via clojure-skills search
+2. **Enable composition** - Skills can be mixed into agent prompts as needed
+3. **Maintain single responsibility** - Each skill covers one cohesive topic
+4. **Cite original source** - Proper attribution to bbatsov/clojure-style-guide
+5. **Complement existing skills** - Don't duplicate cljstyle, clj-kondo, etc.
+
+## Target Audience
+
+- LLM agents working with Clojure codebases
+- Developers learning Clojure conventions
+- Teams establishing coding standards
+
+## Success Criteria
+
+- [ ] All skills properly cite the original style guide
+- [ ] No duplication with existing tooling skills (cljstyle, clj-kondo, etc.)
+- [ ] Skills focus on principles and reasoning, not just rules
+- [ ] Each skill is independently useful and searchable
+- [ ] Skills integrate well with existing language and tooling skills
+- [ ] Examples demonstrate idiomatic Clojure patterns
+
+[1mTask Lists:[0;m
+- [17] Phase 1: Code Layout and Formatting Skills
+  ○ [57] Create code_layout_basics.md skill
+  ○ [58] Create function_formatting.md skill
+  ○ [59] Create collection_formatting.md skill
+  ○ [60] Create whitespace_conventions.md skill
+- [18] Phase 2: Naming Conventions and Organization Skills
+  ○ [61] Create namespace_naming.md skill
+  ○ [62] Create namespace_declaration.md skill
+  ○ [63] Create var_naming_conventions.md skill
+  ○ [64] Create type_naming_conventions.md skill
+- [19] Phase 3: Idiomatic Clojure Patterns Skills
+  ○ [65] Create idiomatic_control_flow.md skill
+  ○ [66] Create threading_macros.md skill
+  ○ [67] Create function_literals_and_composition.md skill
+  ○ [68] Create data_structure_idioms.md skill
+  ○ [69] Create java_interop_style.md skill
+  ○ [70] Create macro_best_practices.md skill
+- [20] Phase 4: Documentation and Comments Skills
+  ○ [71] Create comment_conventions.md skill
+  ○ [72] Create docstring_best_practices.md skill
+  ○ [73] Create metadata_conventions.md skill
+  ○ [74] Create private_and_visibility.md skill
+- [21] Phase 5: Testing and Library Organization Skills
+  ○ [75] Create test_organization.md skill
+  ○ [76] Create library_organization.md skill
+  ○ [77] Create types_and_records_style.md skill
+  ○ [78] Create mutation_patterns.md skill
