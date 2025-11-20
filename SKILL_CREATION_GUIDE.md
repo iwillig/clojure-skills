@@ -174,7 +174,7 @@ New skills should focus on:
 Link skills that will help with the implementation:
 
 ```bash
-# Search for relevant existing skills
+# Search for relevant existing skills (outputs JSON)
 clojure-skills skill search "formatting"
 clojure-skills skill search "style"
 
@@ -183,7 +183,7 @@ clojure-skills plan skill associate 5 "cljstyle" --position 1
 clojure-skills plan skill associate 5 "clj_kondo" --position 2
 clojure-skills plan skill associate 5 "clojure_intro" --position 3
 
-# Verify associations
+# Verify associations (outputs JSON)
 clojure-skills plan skill list 5
 ```
 
@@ -278,12 +278,12 @@ clojure-skills plan update 5 --status "in-progress"
 Review the associated skills and plan content:
 
 ```bash
-# Review plan to understand context
+# Review plan to understand context (outputs JSON)
 clojure-skills plan show 5
 
-# Review associated skills for knowledge
-clojure-skills skill show "cljstyle" | head -100
-clojure-skills skill show "clj_kondo" | head -100
+# Review associated skills for knowledge (extract markdown content)
+clojure-skills skill show "cljstyle" | jq -r '.content' | head -100
+clojure-skills skill show "clj_kondo" | jq -r '.content' | head -100
 ```
 
 This ensures you understand what already exists and what approach to take.
@@ -322,8 +322,14 @@ clojure-skills db sync
 **5. Verify skill appears:**
 
 ```bash
+# Search returns JSON with matching skills
 clojure-skills skill search "code layout"
+
+# Show returns JSON with full skill details
 clojure-skills skill show "code_layout_basics"
+
+# Extract just the content as markdown
+clojure-skills skill show "code_layout_basics" | jq -r '.content'
 ```
 
 **6. Mark task complete:**
@@ -775,8 +781,8 @@ clojure-skills task-list task create 17 \
 
 ```bash
 # 6. Before starting, review context
-clojure-skills plan show 5           # Review plan
-clojure-skills skill show "cljstyle" # Review existing formatting skill
+clojure-skills plan show 5                                  # Review plan (JSON)
+clojure-skills skill show "cljstyle" | jq -r '.content'     # Review existing formatting skill (markdown)
 
 # 7. Create skill file
 cat > skills/language/code_layout_basics.md <<'EOF'
@@ -854,6 +860,7 @@ clojure-skills plan result create 5 \
 **Research existing skills first:**
 
 ```bash
+# All commands output JSON
 clojure-skills skill list
 clojure-skills skill search "related topic"
 ```
@@ -877,8 +884,9 @@ Avoid creating duplicate skills.
 **Review context before each skill:**
 
 ```bash
+# Outputs JSON - use jq to extract content
 clojure-skills plan show <PLAN-ID>
-clojure-skills skill show "<associated-skill>"
+clojure-skills skill show "<associated-skill>" | jq -r '.content'
 ```
 
 **Follow the skill template strictly:**
@@ -901,7 +909,7 @@ clj-nrepl-eval -p 7889 "<example code>"
 # Database sync
 clojure-skills db sync
 
-# Verification
+# Verification (outputs JSON)
 clojure-skills skill search "<topic>"
 ```
 
@@ -914,10 +922,10 @@ Mark tasks complete as soon as they're done - don't batch completions.
 **Review before completing:**
 
 ```bash
-# Check all tasks complete
+# Check all tasks complete (outputs JSON)
 clojure-skills plan show <PLAN-ID>
 
-# Verify all skills synced
+# Verify all skills synced (outputs JSON)
 clojure-skills db stats
 clojure-skills skill list -c <category>
 ```
@@ -988,10 +996,10 @@ Skill names must be unique. Either:
 **Solution:**
 
 ```bash
-# List all plans
+# List all plans (outputs JSON)
 clojure-skills plan list
 
-# Find by name
+# Find by name (outputs JSON)
 clojure-skills plan show "plan-name"
 ```
 

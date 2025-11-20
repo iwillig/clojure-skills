@@ -28,11 +28,11 @@
   "Rollback the last migration."
   ([]
    (rollback 1))
-   ([amount]
-    (let [config (load-config)]
-      (println (format "Rolling back %d migration(s)..." amount))
-      (ragtime-repl/rollback config amount)
-      (println "Rollback complete."))))
+  ([amount]
+   (let [config (load-config)]
+     (println (format "Rolling back %d migration(s)..." amount))
+     (ragtime-repl/rollback config amount)
+     (println "Rollback complete."))))
 
 (defn rollback-all
   "Rollback all migrations."

@@ -307,8 +307,7 @@
                     :position idx})
                   (println (format "  Associated skill: %s -> %s (position %d)"
                                    prompt-name (:skills/name skill-record) idx)))
-                (do
-                  (println (format "  WARNING: Skill not found: %s" skill-path))))))
+                (println (format "  WARNING: Skill not found: %s" skill-path)))))
 
           ;; Clear existing prompt references
           (jdbc/execute! db ["DELETE FROM prompt_references WHERE source_prompt_id = ? AND reference_type = 'fragment'"
@@ -363,7 +362,7 @@
                                   {:name fragment-name
                                    :title fragment-title
                                    :description (str "Reference skill for " prompt-name " prompt")}))]
-                  
+
                   ;; Clear and add skill to fragment
                   (jdbc/execute! db ["DELETE FROM prompt_fragment_skills WHERE fragment_id = ?"
                                      (:prompt_fragments/id fragment)])
@@ -372,7 +371,7 @@
                    {:fragment_id (:prompt_fragments/id fragment)
                     :skill_id (:skills/id skill-record)
                     :position 0})
-                  
+
                   ;; Add prompt reference to this fragment
                   (fragments/add-prompt-reference
                    db
@@ -380,7 +379,7 @@
                     :target_fragment_id (:prompt_fragments/id fragment)
                     :reference_type "fragment"
                     :position (+ 100 idx)})  ;; Use 100+ for references to keep them separate
-                  
+
                   (println (format "  Referenced skill: %s -> %s (position %d)"
                                    prompt-name (:skills/name skill-record) (+ 100 idx))))
                 (println (format "  WARNING: Referenced skill not found: %s" skill-path)))))

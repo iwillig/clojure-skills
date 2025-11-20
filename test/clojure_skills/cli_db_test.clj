@@ -5,6 +5,7 @@
    [clojure-skills.cli :as cli]
    [clojure-skills.config :as config]
    [clojure-skills.db.migrate :as migrate]
+   [clojure-skills.test-utils :as tu]
    [next.jdbc :as jdbc]))
 
 ;; Test database and fixture
@@ -135,10 +136,11 @@
                       VALUES (?, ?, ?, ?, ?, ?, ?)"
                         "test-skill" "test-category" "test/path.md" "test content" 100 50 "hash123"])
 
-        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))]
-          (is (re-find #"Database Statistics" output))
-          (is (re-find #"Skills" output))
-          (is (re-find #"1" output)))))))
+        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
+              parsed (tu/parse-json-output output)]
+          (is (= "stats" (:type parsed)))
+          (is (map? (:database parsed)))
+          (is (= 1 (get-in parsed [:database :skills]))))))))
 
 (deftest db-stats-empty-database-test
   (testing "db stats works with empty database"
@@ -146,10 +148,11 @@
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Wrap in try-catch to handle any unexpected exit calls
         (try
-          (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))]
-            (is (re-find #"Database Statistics" output))
-            (is (re-find #"Skills" output))
-            (is (re-find #"0" output)))
+          (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
+                parsed (tu/parse-json-output output)]
+            (is (= "stats" (:type parsed)))
+            (is (map? (:database parsed)))
+            (is (= 0 (get-in parsed [:database :skills]))))
           (catch clojure.lang.ExceptionInfo e
             ;; If exit was called unexpectedly, fail the test with details
             (is false (str "Unexpected exit: " (pr-str (ex-data e))))))))))
@@ -169,8 +172,10 @@
           (is (re-find #"Sync complete" output)))
 
         ;; 3. Stats
-        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))]
-          (is (re-find #"Database Statistics" output)))
+        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
+              parsed (tu/parse-json-output output)]
+          (is (= "stats" (:type parsed)))
+          (is (map? (:database parsed))))
 
         ;; 4. Reset
         (let [{:keys [output]} (capture-output #(cli/cmd-reset-db {:force true}))]

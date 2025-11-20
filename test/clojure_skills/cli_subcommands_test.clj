@@ -5,6 +5,7 @@
    [clojure-skills.cli :as cli]
    [clojure-skills.config :as config]
    [clojure-skills.db.migrate :as migrate]
+   [clojure-skills.test-utils :as tu]
    [next.jdbc :as jdbc]))
 
 ;; Test database and fixture
@@ -93,9 +94,11 @@
                        ["INSERT INTO skills (name, category, path, content, file_hash, size_bytes, token_count) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)"
                         "test-skill" "testing" "test.md" "content" "hash" 100 25])
-        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))]
-          (is (re-find #"Database Statistics" output))
-          (is (re-find #"Skills" output)))))))
+        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
+              parsed (tu/parse-json-output output)]
+          (is (= "stats" (:type parsed)))
+          (is (map? (:database parsed)))
+          (is (= 1 (get-in parsed [:database :skills]))))))))
 
 ;; Integration test for db subcommand workflow
 (deftest db-subcommand-workflow-test
@@ -112,8 +115,10 @@
           (is (re-find #"Sync complete" output)))
 
         ;; 3. db stats (after sync, should have data)
-        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))]
-          (is (re-find #"Database Statistics" output)))
+        (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
+              parsed (tu/parse-json-output output)]
+          (is (= "stats" (:type parsed)))
+          (is (map? (:database parsed))))
 
         ;; 4. db reset --force
         (let [{:keys [output]} (capture-output #(cli/cmd-reset-db {:force true}))]
@@ -204,13 +209,15 @@
                         "hash123" 500 125])
         ;; Simulate CLI call: clojure-skills prompt show show-test-prompt
         (let [{:keys [output]} (capture-output
-                                #(cli/cmd-show-prompt {:_arguments ["show-test-prompt"]}))]
-          (is (re-find #"show-test-prompt" output))
-          (is (re-find #"Test Prompt Title" output))
-          (is (re-find #"Test Author" output))
-          (is (re-find #"500 bytes" output))
-          (is (re-find #"125 tokens" output))
-          (is (re-find #"Test Prompt Content" output))))))
+                                #(cli/cmd-show-prompt {:_arguments ["show-test-prompt"]}))
+              parsed (tu/parse-json-output output)]
+          (is (= "prompt" (:type parsed)))
+          (is (= "show-test-prompt" (get-in parsed [:data :name])))
+          (is (= "Test Prompt Title" (get-in parsed [:data :title])))
+          (is (= "Test Author" (get-in parsed [:data :author])))
+          (is (= 500 (get-in parsed [:data :size-bytes])))
+          (is (= 125 (get-in parsed [:data :token-count])))
+          (is (re-find #"Test Prompt Content" (get-in parsed [:data :content])))))))
 
   (testing "prompt show handles prompts without associated skills"
     (binding [cli/*exit-fn* mock-exit]
@@ -222,10 +229,13 @@
                         "no-skills-prompt" "no-skills.md" "content" "hash" 100 25])
         ;; Simulate CLI call - should work without error even with no skills
         (let [{:keys [output]} (capture-output
-                                #(cli/cmd-show-prompt {:_arguments ["no-skills-prompt"]}))]
-          (is (re-find #"no-skills-prompt" output))
-          ;; Should NOT have Associated Skills section if there are none
-          (is (not (re-find #"Associated Skills:" output)))))))
+                                #(cli/cmd-show-prompt {:_arguments ["no-skills-prompt"]}))
+              parsed (tu/parse-json-output output)]
+          (is (= "prompt" (:type parsed)))
+          (is (= "no-skills-prompt" (get-in parsed [:data :name])))
+          ;; Should have empty fragments and references
+          (is (empty? (get-in parsed [:data :embedded-fragments])))
+          (is (empty? (get-in parsed [:data :references])))))))
 
   (testing "prompt show with non-existent prompt fails"
     (binding [cli/*exit-fn* mock-exit]

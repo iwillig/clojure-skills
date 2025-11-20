@@ -22,23 +22,11 @@
 
 (defn lint-file
   "Lint a specific file or directory.
-  
+
   Example: (lint-file \"src/clojure_skills/main.clj\")"
   [path]
   (-> (clj-kondo/run! {:lint [path]})
       clj-kondo/print!))
-
-(defn lint-ns
-  "Lint a specific namespace by converting namespace symbol to file path.
-  
-  Example: (lint-ns 'clojure-skills.main)"
-  [ns-sym]
-  (let [path (-> (str ns-sym)
-                 (str/replace "-" "_")
-                 (str/replace "." "/"))]
-    (-> (clj-kondo/run! {:lint [(str "src/" path ".clj")
-                                (str "test/" path "_test.clj")]})
-        clj-kondo/print!)))
 
 (comment
 

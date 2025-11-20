@@ -168,13 +168,15 @@ Only use the clj-kondo API directly if the dev namespace functions don't meet yo
 
 **The `clojure-skills` CLI tool provides searchable access to 70+ skills stored in a SQLite database with FTS5 full-text search.**
 
+**All commands output JSON** for integration with command-line tools like `jq`.
+
 **Quick commands:**
 ```bash
-# Search for skills by topic
+# Search for skills by topic (outputs JSON)
 clojure-skills skill search "database queries"
 clojure-skills skill search "validation"
 
-# List all skills by category
+# List all skills by category (outputs JSON)
 clojure-skills skill list
 clojure-skills skill list -c libraries/database
 
@@ -182,14 +184,29 @@ clojure-skills skill list -c libraries/database
 clojure-skills skill show "malli"
 clojure-skills skill show "next_jdbc"
 
-# Search prompts
+# Search prompts (outputs JSON)
 clojure-skills prompt search "agent"
 clojure-skills prompt list
 
-# Database operations
+# Database operations (outputs JSON)
 clojure-skills db init
 clojure-skills db sync
 clojure-skills db stats
+```
+
+**Using with jq for filtering and formatting:**
+```bash
+# Extract just skill names
+clojure-skills skill list | jq -r '.[] | .name'
+
+# Get skill content as markdown
+clojure-skills skill show "malli" | jq -r '.content'
+
+# Filter skills by category
+clojure-skills skill list | jq '.[] | select(.category == "libraries/database")'
+
+# Count skills by category
+clojure-skills skill list | jq -r '.[] | .category' | sort | uniq -c
 ```
 
 **When to use:**
@@ -202,13 +219,16 @@ clojure-skills db stats
 **Integration with development:**
 
 ```bash
-# 1. Find relevant skills
+# 1. Find relevant skills (outputs JSON)
 clojure-skills skill search "HTTP server"
 
-# 2. View detailed content
+# 2. View detailed content (outputs JSON)
 clojure-skills skill show "http_kit"
 
-# 3. Use knowledge in your code
+# 3. Extract just the content as markdown
+clojure-skills skill show "http_kit" | jq -r '.content'
+
+# 4. Use knowledge in your code
 # (Now you know http-kit patterns to test with clj-nrepl-eval)
 ```
 
@@ -436,12 +456,12 @@ The CLI provides searchable access to the skills database and task tracking.
 # Initialize database (first time only)
 clojure-skills db init
 
-# Search for skills
+# Search for skills (outputs JSON)
 clojure-skills skill search "http server"
 clojure-skills skill search "validation"
 clojure-skills skill search "malli" -c libraries/data_validation
 
-# List skills
+# List skills (outputs JSON)
 clojure-skills skill list                          # All skills
 clojure-skills skill list -c libraries/database    # By category
 
@@ -449,11 +469,11 @@ clojure-skills skill list -c libraries/database    # By category
 clojure-skills skill show "malli"
 clojure-skills skill show "next_jdbc"
 
-# Search prompts
+# Search prompts (outputs JSON)
 clojure-skills prompt search "agent"
 clojure-skills prompt list
 
-# Database operations
+# Database operations (outputs JSON)
 clojure-skills db stats
 clojure-skills db sync
 
@@ -1857,13 +1877,13 @@ bb setup-python           # Install Python dependencies
 
 1. **Search the skills database first:**
    ```bash
-   clojure-skills search "library-name"
-   clojure-skills search "problem-domain" -t skills
+   clojure-skills skill search "library-name"
+   clojure-skills skill search "problem-domain"
    ```
 
 2. **View detailed skill content:**
    ```bash
-   clojure-skills show-skill "skill-name" | jq -r '.content'
+   clojure-skills skill show "skill-name" | jq -r '.content'
    ```
 
 3. **Apply knowledge with clj-nrepl-eval:**
@@ -1893,7 +1913,7 @@ For complex multi-step implementations, use the task tracking system. See [Task 
 3. **Associate relevant skills with the plan:**
    ```bash
    # Search for relevant skills first
-   clojure-skills skill search "topic" -t skills
+   clojure-skills skill search "topic"
 
    # Associate skills that will be needed
    clojure-skills plan skill associate <PLAN-ID> "skill-name" --position 1
@@ -1918,7 +1938,7 @@ For complex multi-step implementations, use the task tracking system. See [Task 
    clojure-skills skill show "skill-name" | jq -r '.content' | head -100
 
    # Or search for additional skills as needed
-   clojure-skills skill search "specific-topic" -t skills
+   clojure-skills skill search "specific-topic"
    ```
 
 6. **Track progress as you work:**
@@ -2075,8 +2095,8 @@ This repository is designed for **modular, composable prompt engineering** for C
 - `clj-nrepl-eval -p 7889 "(k/run-all)"` - Run all tests via REPL
 - `clj-nrepl-eval -p 7889 "(refresh)"` - Reload changed namespaces
 - `clj-paren-repair src/**/*.clj test/**/*.clj` - Fix delimiter errors
-- `clojure-skills skill search <topic>` - Find relevant skills
-- `clojure-skills skill show <name>` - View detailed skill content
+- `clojure-skills skill search <topic>` - Find relevant skills (JSON output)
+- `clojure-skills skill show <name> | jq -r '.content'` - View skill content as markdown
 - `clojure-skills plan create` - Start tracking complex implementations
 - `clojure-skills plan skill associate <plan-id> <skill>` - Link skills to plans
 - `clojure-skills plan skill list <plan-id>` - View plan's associated skills

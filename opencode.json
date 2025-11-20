@@ -22,6 +22,23 @@
       }
     },
 
+    "plan_executor": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./_build/clojure_build.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": true,
+        "bash": true,
+        "todowrite": false,
+        "todoread": false
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
+    },
+
 
     "skill_builder": {
       "model": "anthropic/claude-sonnet-4-5",
@@ -45,7 +62,7 @@
   "mcp": {},
   "lsp": {
     "clojure-lsp": {
-      "command": ["/opt/homebrew/bin/clojure-lsp"],
+      "command": ["/opt/homebrew/bin/clojure-lsp", "--stdio"],
       "extensions": [".clj", ".cljs", ".cljc", ".edn", ".bb"],
       "env": {
         "CLOJURE_LSP_LOG_LEVEL": "info"

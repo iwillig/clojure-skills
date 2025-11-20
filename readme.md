@@ -39,7 +39,7 @@ complete teaching prompts for AI agents.
 
 - Full-text search with SQLite FTS5
 - 78 skills across 29 categories
-- CLI tool for instant access
+- **CLI tool with JSON output** - pipe to `jq` for easy processing
 - Task tracking with searchable plan summaries for complex implementations
 - Build system for composing custom prompts
 - **REPL-driven development workflow with clj-nrepl-eval**
@@ -139,18 +139,27 @@ clojure -M:main db stats
 
 ```bash
 clojure -M:main skill search "validation"
-# Shows: malli, spec, schema skills
+# Returns JSON with matching skills
+
+# Or format with jq
+clojure -M:main skill search "validation" | jq '.skills[].name'
+# Shows: malli, spec, schema...
 ```
 
 ### 5. View a skill (30 seconds)
 
 ```bash
 clojure -M:main skill show malli -c libraries/data_validation
+# Returns JSON with full skill content
+
+# Extract just the content
+clojure -M:main skill show malli | jq -r '.data.content'
 # Displays full Malli validation skill
 ```
 
 **Next steps:**
-- See [CLI Usage](#cli-usage) for all available commands
+- See [CLI Usage](#cli-usage) for all available commands (all output JSON)
+- Learn [JSON Output and jq Integration](#json-output-and-jq-integration) for processing results
 - Read [REPL-Driven Development](#repl-driven-development-with-mcp-light) to use clj-nrepl-eval
 - Explore [Building Prompts](#building-prompts) to compose custom agents
 
@@ -260,7 +269,7 @@ clojure-skills db stats
 
 ## CLI Usage
 
-The `clojure-skills` CLI is your primary interface for working with the skills database.
+The `clojure-skills` CLI outputs structured JSON by default, making it easy to pipe to `jq` for filtering and processing.
 
 ### Quick Start
 
@@ -268,22 +277,24 @@ The `clojure-skills` CLI is your primary interface for working with the skills d
 # Get help
 clojure-skills --help
 
-# Search for skills about a topic
-clojure-skills skill search "validation"
+# Search for skills about a topic (returns JSON)
+clojure-skills skill search "validation" | jq '.count'
 
 # List all skills in a category
-clojure-skills skill list -c libraries/database
+clojure-skills skill list -c libraries/database | jq '.skills[].name'
 
-# View a skill's full content
-clojure-skills skill show malli -c libraries/data_validation
+# View a skill's full content (returns JSON)
+clojure-skills skill show malli -c libraries/data_validation | jq '.data.content'
 
 # Get database statistics
-clojure-skills db stats
+clojure-skills db stats | jq '.database'
 ```
+
+**All commands output JSON** - pipe to `jq` for human-readable formatting or further processing.
 
 ### Searching Skills
 
-**Basic search** - finds skills by content match:
+**Basic search** - finds skills by content match (returns JSON):
 
 ```bash
 # Search skills
@@ -299,43 +310,79 @@ clojure-skills skill search "database" -n 10
 clojure-skills prompt search "agent"
 ```
 
-**Example output:**
+**Example output (JSON):**
 
+```json
+{
+  "type": "skill-search-results",
+  "query": "validation",
+  "category": null,
+  "count": 5,
+  "skills": [
+    {
+      "name": "malli",
+      "category": "libraries/data_validation",
+      "size-bytes": 11059,
+      "token-count": 2772
+    },
+    {
+      "name": "spec",
+      "category": "libraries/data_validation",
+      "size-bytes": 21161,
+      "token-count": 5291
+    }
+  ]
+}
 ```
-Searching for: validation
 
-Found 5 skills
+**Format with jq for readability:**
 
-┌─────────┬─────────────────────────┬──────┬──────┐
-│   Name  │         Category        │ Size │Tokens│
-├─────────┼─────────────────────────┼──────┼──────┤
-│    malli│libraries/data_validation│10.8KB│2772  │
-│     spec│libraries/data_validation│20.7KB│5291  │
-│   reitit│       libraries/rest_api│ 2.6KB│658   │
-│    buddy│       libraries/security│20.5KB│5257  │
-│cli_matic│            libraries/cli│ 3.0KB│760   │
-└─────────┴─────────────────────────┴──────┴──────┘
+```bash
+# Get just the skill names
+clojure-skills skill search "validation" | jq -r '.skills[].name'
+# malli
+# spec
+# buddy
+# cli_matic
+
+# Count results
+clojure-skills skill search "validation" | jq '.count'
+# 5
+
+# Format as table
+clojure-skills skill search "validation" | \
+  jq -r '.skills[] | "\(.name)\t\(.category)\t\(.\"token-count\")"'
 ```
 
 ### Listing Skills
 
-**List all skills:**
+**List all skills (returns JSON):**
 
 ```bash
+# Get all skills as JSON
 clojure-skills skill list
+
+# Count total skills
+clojure-skills skill list | jq '.count'
+
+# Get skill names only
+clojure-skills skill list | jq -r '.skills[].name'
+
+# Calculate total tokens
+clojure-skills skill list | jq '[.skills[]."token-count"] | add'
 ```
 
 **List by category:**
 
 ```bash
 # Database skills
-clojure-skills skill list -c libraries/database
+clojure-skills skill list -c libraries/database | jq '.skills'
 
-# Testing skills
-clojure-skills skill list -c testing
+# Testing skills  
+clojure-skills skill list -c testing | jq '.skills[].name'
 
 # Language fundamentals
-clojure-skills skill list -c language
+clojure-skills skill list -c language | jq '.skills'
 ```
 
 **Available categories:**
@@ -356,31 +403,100 @@ tooling/               - cider, clj-kondo, babashka
 
 ### Viewing Skills
 
-**Show a skill's full content:**
+**Show a skill's full content (returns JSON):**
 
 ```bash
-# Basic usage
+# Basic usage (returns JSON)
 clojure-skills skill show malli
 
 # Specify category to avoid ambiguity
 clojure-skills skill show malli -c libraries/data_validation
+
+# Extract just the content
+clojure-skills skill show malli | jq -r '.data.content'
+
+# Get metadata
+clojure-skills skill show malli | jq '.data | {name, category, size: .size_bytes, tokens: .token_count}'
 ```
 
-**Output includes metadata and full markdown content.**
+**Output is JSON with metadata and full markdown content in `.data.content`.**
 
 ### Database Statistics
 
-**View overall statistics:**
+**View overall statistics (returns JSON):**
 
 ```bash
+# Get all stats as JSON
 clojure-skills db stats
+
+# Extract specific stats
+clojure-skills db stats | jq '.database'
+clojure-skills db stats | jq '.database.skills'
+clojure-skills db stats | jq '.configuration'
+
+# Format nicely
+clojure-skills db stats | jq '{
+  skills: .database.skills,
+  prompts: .database.prompts,
+  categories: .database.categories,
+  total_tokens: .database."total-tokens"
+}'
 ```
 
-**Output shows:**
+**JSON output includes:**
 
-- Total skills, prompts, categories
-- Total size and estimated tokens
+- Database stats (skills, prompts, categories, total size/tokens)
+- Configuration (database path, directories, settings)
 - Category breakdown with counts
+
+### JSON Output and jq Integration
+
+**All CLI commands output structured JSON** making it easy to process programmatically or pipe to `jq`.
+
+**Common jq patterns:**
+
+```bash
+# Extract specific fields
+clojure-skills skill list | jq '.count'
+clojure-skills skill list | jq '.skills[0].name'
+
+# Filter by condition
+clojure-skills skill list | jq '.skills[] | select(.category | startswith("libraries"))'
+
+# Get array of values
+clojure-skills skill list | jq '[.skills[].name]'
+
+# Calculate aggregates
+clojure-skills skill list | jq '[.skills[]."token-count"] | add'
+
+# Format as table
+clojure-skills skill list | jq -r '.skills[] | "\(.name)\t\(.category)"'
+
+# Complex queries
+clojure-skills plan show 1 | jq '[.data."task-lists"[].tasks[] | select(.completed)] | length'
+```
+
+**Example: Find all database-related skills**
+
+```bash
+clojure-skills skill list | \
+  jq '.skills[] | select(.category | contains("database")) | {name, tokens: ."token-count"}'
+```
+
+**Example: Count completed tasks in a plan**
+
+```bash
+clojure-skills plan show 6 | \
+  jq '[.data."task-lists"[].tasks[] | select(.completed == true)] | length'
+```
+
+**Testing JSON output:**
+
+```bash
+# Run integration tests
+./test-jq-integration.sh
+# Tests all commands work correctly with jq
+```
 
 ### Database Management
 
@@ -650,13 +766,19 @@ clojure-skills plan create \
   --description "Detailed description of the refactoring effort" \
   --status "in-progress"
 
-# List plans
+# List plans (returns JSON)
 clojure-skills plan list
 clojure-skills plan list --status "in-progress"
 
-# Show plan details (includes summary, task lists, and task IDs)
+# Format plan list with jq
+clojure-skills plan list | jq '.plans[] | {name, status}'
+
+# Show plan details (returns JSON with nested structure)
 clojure-skills plan show 1           # By ID
 clojure-skills plan show api-refactor # By name
+
+# Extract specific plan information
+clojure-skills plan show 1 | jq '.data | {name, status, task_count: [."task-lists"[].tasks[]] | length}'
 
 # The show-plan output displays:
 # - Plan metadata (ID, name, status, title, summary, description)

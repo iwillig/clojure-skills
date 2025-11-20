@@ -13,11 +13,11 @@
    [clojure-skills.db.plan-skills :as plan-skills]
    [clojure-skills.db.plans :as plans]
    [clojure-skills.db.tasks :as tasks]
+   [clojure-skills.output :as output]
    [clojure-skills.search :as search]
    [clojure-skills.sync :as sync]
    [clojure.set :as set]
    [clojure.string :as str]
-   [jsonista.core :as json]
    [next.jdbc :as jdbc]))
 
 (set! *warn-on-reflection* true)
@@ -133,9 +133,8 @@
     (handle-command-errors
      "Search"
      (fn []
-       (let [[_config db] (load-config-and-db)]
-         (print-info (str "Searching for: " query))
-         (let [results (cond
+       (let [[_config db] (load-config-and-db)
+             results (cond
                          (= type "skills")
                          {:skills (search/search-skills db query
                                                         :max-results max-results
@@ -151,33 +150,24 @@
                          (search/search-all db query
                                             :max-results max-results
                                             :category category))]
-
-           (when (seq (:skills results))
-             (println)
-             (println (bling/bling [:bold (format "Found %d skills" (count (:skills results)))]))
-             (format-table
-              [:name :category :size :tokens]
-              (map (fn [skill]
-                     {:name (:skills/name skill)
-                      :category (:skills/category skill)
-                      :size (format-size (or (:skills/size_bytes skill) 0))
-                      :tokens (or (:skills/token_count skill) 0)})
-                   (:skills results))))
-
-           (when (seq (:prompts results))
-             (println)
-             (println (bling/bling [:bold (format "Found %d prompts" (count (:prompts results)))]))
-             (format-table
-              [:name :size :tokens]
-              (map (fn [prompt]
-                     {:name (:prompts/name prompt)
-                      :size (format-size (or (:prompts/size_bytes prompt) 0))
-                      :tokens (or (:prompts/token_count prompt) 0)})
-                   (:prompts results))))
-
-           (when (and (empty? (:skills results))
-                      (empty? (:prompts results)))
-             (println "No results found."))))))))
+           (output/output-data
+            {:type :search-results
+             :query query
+             :category category
+             :search-type type
+             :skills {:count (count (:skills results))
+                      :results (map (fn [skill]
+                                      {:name (:skills/name skill)
+                                       :category (:skills/category skill)
+                                       :size-bytes (or (:skills/size_bytes skill) 0)
+                                       :token-count (or (:skills/token_count skill) 0)})
+                                    (:skills results))}
+             :prompts {:count (count (:prompts results))
+                       :results (map (fn [prompt]
+                                       {:name (:prompts/name prompt)
+                                        :size-bytes (or (:prompts/size_bytes prompt) 0)
+                                        :token-count (or (:prompts/token_count prompt) 0)})
+                                     (:prompts results))}}))))))
 
 (defn cmd-search-skills
   "Search skills."
@@ -187,24 +177,21 @@
     (handle-command-errors
      "Search skills"
      (fn []
-       (let [[_config db] (load-config-and-db)]
-         (print-info (str "Searching skills for: " query))
-         (let [skills (search/search-skills db query
+       (let [[_config db] (load-config-and-db)
+             skills (search/search-skills db query
                                             :max-results (or max-results 50)
                                             :category category)]
-           (when (seq skills)
-             (println)
-             (println (bling/bling [:bold (format "Found %d skills" (count skills))]))
-             (format-table
-              [:name :category :size :tokens]
-              (map (fn [skill]
-                     {:name (:skills/name skill)
-                      :category (:skills/category skill)
-                      :size (format-size (or (:skills/size_bytes skill) 0))
-                      :tokens (or (:skills/token_count skill) 0)})
-                   skills)))
-           (when (empty? skills)
-             (println "No skills found."))))))))
+           (output/output-data
+            {:type :skill-search-results
+             :query query
+             :category category
+             :count (count skills)
+             :skills (map (fn [skill]
+                            {:name (:skills/name skill)
+                             :category (:skills/category skill)
+                             :size-bytes (or (:skills/size_bytes skill) 0)
+                             :token-count (or (:skills/token_count skill) 0)})
+                          skills)}))))))
 
 (defn cmd-search-prompts
   "Search prompts."
@@ -214,22 +201,18 @@
     (handle-command-errors
      "Search prompts"
      (fn []
-       (let [[_config db] (load-config-and-db)]
-         (print-info (str "Searching prompts for: " query))
-         (let [prompts (search/search-prompts db query
+       (let [[_config db] (load-config-and-db)
+             prompts (search/search-prompts db query
                                               :max-results (or max-results 50))]
-           (when (seq prompts)
-             (println)
-             (println (bling/bling [:bold (format "Found %d prompts" (count prompts))]))
-             (format-table
-              [:name :size :tokens]
-              (map (fn [prompt]
-                     {:name (:prompts/name prompt)
-                      :size (format-size (or (:prompts/size_bytes prompt) 0))
-                      :tokens (or (:prompts/token_count prompt) 0)})
-                   prompts)))
-           (when (empty? prompts)
-             (println "No prompts found."))))))))
+           (output/output-data
+            {:type :prompt-search-results
+             :query query
+             :count (count prompts)
+             :prompts (map (fn [prompt]
+                             {:name (:prompts/name prompt)
+                              :size-bytes (or (:prompts/size_bytes prompt) 0)
+                              :token-count (or (:prompts/token_count prompt) 0)})
+                           prompts)}))))))
 
 (defn cmd-list-skills
   "List all skills."
@@ -241,16 +224,15 @@
            skills (if category
                     (search/list-skills db :category category)
                     (search/list-skills db))]
-       (println)
-       (println (bling/bling [:bold (format "Found %d skills" (count skills))]))
-       (format-table
-        [:name :category :size :tokens]
-        (map (fn [skill]
-               {:name (:skills/name skill)
-                :category (:skills/category skill)
-                :size (format-size (or (:skills/size_bytes skill) 0))
-                :tokens (or (:skills/token_count skill) 0)})
-             skills))))))
+       (output/output-data
+        {:type :skill-list
+         :count (count skills)
+         :skills (map (fn [skill]
+                        {:name (:skills/name skill)
+                         :category (:skills/category skill)
+                         :size-bytes (or (:skills/size_bytes skill) 0)
+                         :token-count (or (:skills/token_count skill) 0)})
+                      skills)})))))
 
 (defn cmd-list-prompts
   "List all prompts."
@@ -260,15 +242,14 @@
    (fn []
      (let [[_config db] (load-config-and-db)
            prompts (search/list-prompts db)]
-       (println)
-       (println (bling/bling [:bold (format "Found %d prompts" (count prompts))]))
-       (format-table
-        [:name :size :tokens]
-        (map (fn [prompt]
-               {:name (:prompts/name prompt)
-                :size (format-size (or (:prompts/size_bytes prompt) 0))
-                :tokens (or (:prompts/token_count prompt) 0)})
-             prompts))))))
+       (output/output-data
+        {:type :prompt-list
+         :count (count prompts)
+         :prompts (map (fn [prompt]
+                         {:name (:prompts/name prompt)
+                          :size-bytes (or (:prompts/size_bytes prompt) 0)
+                          :token-count (or (:prompts/token_count prompt) 0)})
+                       prompts)})))))
 
 (defn list-prompt-skills
   "List all skills associated with a prompt via fragments."
@@ -312,7 +293,7 @@
                      AND pr.reference_type = 'fragment'
                      AND pf.name LIKE '%-ref-%'
                    ORDER BY pfs.position"
-                   prompt-id]))
+                  prompt-id]))
 
 (defn render-prompt-content
   "Compose full prompt content by combining prompt intro, embedded skills, and references.
@@ -327,26 +308,26 @@
   (let [fragments (list-prompt-fragments db (:prompts/id prompt))
         references (list-prompt-references db (:prompts/id prompt))]
     (str/join "\n\n"
-      [;; 1. Prompt introduction
-       (:prompts/content prompt)
-       
-       ;; 2. Embedded skills section
-       (when (seq fragments)
-         (str "\n## Skills\n\n"
-              "The following skills are embedded in this prompt:\n\n"
-              (str/join "\n\n"
-                (map (fn [skill]
-                       (:skills/content skill))
-                     fragments))))
-       
-       ;; 3. References section (table of contents)
-       (when (seq references)
-         (str "\n## References\n\n"
-              "The following skills are referenced but not embedded:\n\n"
-              (str/join "\n"
-                (map (fn [skill]
-                       (format "- %s" (:skills/name skill)))
-                     references))))])))
+              [;; 1. Prompt introduction
+               (:prompts/content prompt)
+
+               ;; 2. Embedded skills section
+               (when (seq fragments)
+                 (str "\n## Skills\n\n"
+                      "The following skills are embedded in this prompt:\n\n"
+                      (str/join "\n\n"
+                                (map (fn [skill]
+                                       (:skills/content skill))
+                                     fragments))))
+
+               ;; 3. References section (table of contents)
+               (when (seq references)
+                 (str "\n## References\n\n"
+                      "The following skills are referenced but not embedded:\n\n"
+                      (str/join "\n"
+                                (map (fn [skill]
+                                       (format "- %s" (:skills/name skill)))
+                                     references))))])))
 
 (defn cmd-show-prompt
   "Show full content of a prompt with metadata and associated skills."
@@ -359,57 +340,38 @@
        (let [[_config db] (load-config-and-db)
              prompt (search/get-prompt-by-name db prompt-name)]
          (if prompt
-           (do
-             (println)
-             (bling/callout {:type :info :label "Prompt"}
-                            (:prompts/name prompt))
-             (println)
-             (println (bling/bling [:bold "Metadata:"]))
-             (when (:prompts/title prompt)
-               (println (str "  Title: " (:prompts/title prompt))))
-             (when (:prompts/description prompt)
-               (println (str "  Description: " (:prompts/description prompt))))
-             (when (:prompts/author prompt)
-               (println (str "  Author: " (:prompts/author prompt))))
-             (println (str "  Size: " (:prompts/size_bytes prompt)
-                           " bytes (" (:prompts/token_count prompt) " tokens)"))
-             (println (str "  Updated: " (:prompts/updated_at prompt)))
-
-             ;; Show embedded fragments (skills that are embedded in the prompt)
-             (let [fragments (list-prompt-fragments db (:prompts/id prompt))]
-               (when (seq fragments)
-                 (println)
-                 (println (bling/bling [:bold "Embedded Fragments:"]))
-                 (println)
-                 (doseq [skill fragments]
-                   (println (format "%d. [%s] %s"
-                                    (:prompt_fragment_skills/position skill)
-                                    (:skills/category skill)
-                                    (:skills/name skill)))
-                   (when (:skills/title skill)
-                     (println (format "    %s" (:skills/title skill)))))))
-
-             ;; Show references (skills that are tracked but not embedded)
-             (let [references (list-prompt-references db (:prompts/id prompt))]
-               (when (seq references)
-                 (println)
-                 (println (bling/bling [:bold "References:"]))
-                 (println "  (Skills tracked for context but not embedded in prompt)")
-                 (println)
-                 (doseq [skill references]
-                   (println (format "%d. [%s] %s"
-                                    (:prompt_fragment_skills/position skill)
-                                    (:skills/category skill)
-                                    (:skills/name skill)))
-                   (when (:skills/title skill)
-                     (println (format "    %s" (:skills/title skill)))))))
-
-              (println)
-              (println (bling/bling [:bold "Content:"]))
-              (println (render-prompt-content db prompt)))
+           (let [;; Show embedded fragments (skills that are embedded in the prompt)
+                 fragments (list-prompt-fragments db (:prompts/id prompt))
+                 ;; Show references (skills that are tracked but not embedded)
+                 references (list-prompt-references db (:prompts/id prompt))
+                 ;; Render full content
+                 full-content (render-prompt-content db prompt)]
+             (output/output-data
+              {:type "prompt"
+               :data {:name (:prompts/name prompt)
+                      :title (:prompts/title prompt)
+                      :description (:prompts/description prompt)
+                      :author (:prompts/author prompt)
+                      :size-bytes (:prompts/size_bytes prompt)
+                      :token-count (:prompts/token_count prompt)
+                      :updated-at (:prompts/updated_at prompt)
+                      :embedded-fragments (map (fn [skill]
+                                                 {:position (:prompt_fragment_skills/position skill)
+                                                  :category (:skills/category skill)
+                                                  :name (:skills/name skill)
+                                                  :title (:skills/title skill)})
+                                               fragments)
+                      :references (map (fn [skill]
+                                         {:position (:prompt_fragment_skills/position skill)
+                                          :category (:skills/category skill)
+                                          :name (:skills/name skill)
+                                          :title (:skills/title skill)})
+                                       references)
+                      :content full-content}}))
            (do
              (print-error (str "Prompt not found: " prompt-name))
              (*exit-fn* 1))))))))
+
 
 (defn cmd-stats
   "Show database statistics and configuration."
@@ -419,46 +381,31 @@
    (fn []
      (let [[config db] (load-config-and-db)
            stats (search/get-stats db)
-           db-path (config/get-db-path config)]
-       (println)
-       (println (bling/bling [:bold "Configuration"]))
-       (println)
-       (format-table
-        [{:source "Database Path" :value db-path}
-         {:source "Auto-migrate" :value (get-in config [:database :auto-migrate] true)}
-         {:source "Skills Directory" :value (get-in config [:project :skills-dir] "skills")}
-         {:source "Prompts Directory" :value (get-in config [:project :prompts-dir] "prompts")}
-         {:source "Build Directory" :value (get-in config [:project :build-dir] "_build")}
-         {:source "Max Results" :value (get-in config [:search :max-results] 50)}
-         {:source "Output Format" :value (get-in config [:output :format] :table)}
-         {:source "Color Output" :value (get-in config [:output :color] true)}])
-
-       ;; Show permissions configuration
-       (let [permissions (get config :permissions {})]
-         (when-not (empty? permissions)
-           (println)
-           (println (bling/bling [:bold "Permissions"]))
-           (println)
-           (format-table
-            (mapv (fn [[k v]]
-                    {:feature (name k) :enabled (not (false? v))})
-                  permissions))))
-
-       (println)
-       (println (bling/bling [:bold "Database Statistics"]))
-       (println)
-       (format-table
-        [{:metric "Skills" :value (:skills stats)}
-         {:metric "Prompts" :value (:prompts stats)}
-         {:metric "Categories" :value (:categories stats)}
-         {:metric "Total Size" :value (format-size (:total-size-bytes stats))}
-         {:metric "Total Tokens" :value (:total-tokens stats)}])
-       (println (bling/bling [:bold "Category Breakdown:"]))
-       (format-table
-        (map (fn [cat]
-               {:category (or (:skills/category cat) (:category cat) "unknown")
-                :count (or (:count cat) 0)})
-             (:category-breakdown stats)))))))
+           db-path (config/get-db-path config)
+           permissions (get config :permissions {})]
+       (output/output-data
+        {:type :stats
+         :configuration {:database-path db-path
+                         :auto-migrate (get-in config [:database :auto-migrate] true)
+                         :skills-directory (get-in config [:project :skills-dir] "skills")
+                         :prompts-directory (get-in config [:project :prompts-dir] "prompts")
+                         :build-directory (get-in config [:project :build-dir] "_build")
+                         :max-results (get-in config [:search :max-results] 50)
+                         :output-format (get-in config [:output :format] :table)
+                         :color-output (get-in config [:output :color] true)}
+         :permissions (when-not (empty? permissions)
+                        (mapv (fn [[k v]]
+                                {:feature (name k) :enabled (not (false? v))})
+                              permissions))
+         :database {:skills (:skills stats)
+                    :prompts (:prompts stats)
+                    :categories (:categories stats)
+                    :total-size-bytes (:total-size-bytes stats)
+                    :total-tokens (:total-tokens stats)}
+         :category-breakdown (map (fn [cat]
+                                    {:category (or (:skills/category cat) (:category cat) "unknown")
+                                     :count (or (:count cat) 0)})
+                                  (:category-breakdown stats))})))))
 
 (defn cmd-reset-db
   "Reset database (WARNING: destructive)."
@@ -487,8 +434,9 @@
        (let [[_config db] (load-config-and-db)
              skill (search/get-skill-by-name db skill-name :category category)]
          (if skill
-           (println (json/write-value-as-string skill
-                                                (json/object-mapper {:pretty true})))
+           (output/output-data
+            {:type :skill
+             :data skill})
            (do
              (print-error (str "Skill not found: " skill-name
                                (when category (str " in category " category))))
@@ -534,18 +482,21 @@
            ;; Build filters (remove nil values)
            plan-filters (into {} (filter (comp some? val) args))
            plans-list (apply plans/list-plans db (flatten (seq plan-filters)))]
-       (println)
-       (println (bling/bling [:bold (format "Found %d plans" (count plans-list))]))
-       (format-table
-        [:id :name :status :created_by :assigned_to :created_at]
-        (map (fn [plan]
-               {:id (:implementation_plans/id plan)
-                :name (:implementation_plans/name plan)
-                :status (:implementation_plans/status plan)
-                :created_by (or (:implementation_plans/created_by plan) "N/A")
-                :assigned_to (or (:implementation_plans/assigned_to plan) "N/A")
-                :created_at (:implementation_plans/created_at plan)})
-             plans-list))))))
+       (output/output-data
+        {:type "plan-list"
+         :count (count plans-list)
+         :plans (map (fn [plan]
+                       {:id (:implementation_plans/id plan)
+                        :name (:implementation_plans/name plan)
+                        :status (:implementation_plans/status plan)
+                        :created-by (:implementation_plans/created_by plan)
+                        :assigned-to (:implementation_plans/assigned_to plan)
+                        :created-at (:implementation_plans/created_at plan)
+                        :updated-at (:implementation_plans/updated_at plan)
+                        :completed-at (:implementation_plans/completed_at plan)
+                        :title (:implementation_plans/title plan)
+                        :summary (:implementation_plans/summary plan)})
+                     plans-list)})))))
 
 (defn cmd-show-plan
   "Show details of an implementation plan."
@@ -566,84 +517,67 @@
                     (plans/get-plan-by-id db plan-id-or-name-coerced)
                     (plans/get-plan-by-name db plan-id-or-name-coerced))]
          (if plan
-           (do
-             (println)
-             (println (bling/bling [:bold (:implementation_plans/name plan)]))
-             (println (str "ID: " (:implementation_plans/id plan)))
-             (println (str "Status: " (:implementation_plans/status plan)))
-             (when (:implementation_plans/title plan)
-               (println (str "Title: " (:implementation_plans/title plan))))
-             (when (:implementation_plans/summary plan)
-               (println (str "Summary: " (:implementation_plans/summary plan))))
-             (when (:implementation_plans/description plan)
-               (println (str "Description: " (:implementation_plans/description plan))))
-             (when (:implementation_plans/created_by plan)
-               (println (str "Created by: " (:implementation_plans/created_by plan))))
-             (when (:implementation_plans/assigned_to plan)
-               (println (str "Assigned to: " (:implementation_plans/assigned_to plan))))
-             (println (str "Created at: " (:implementation_plans/created_at plan)))
-             (when (:implementation_plans/updated_at plan)
-               (println (str "Updated at: " (:implementation_plans/updated_at plan))))
-             (when (:implementation_plans/completed_at plan)
-               (println (str "Completed at: " (:implementation_plans/completed_at plan))))
-             (println)
-             (println (bling/bling [:underline "Content:"]))
-             (println (:implementation_plans/content plan))
-
-             ;; Show associated skills
-             (let [skills (plan-skills/list-plan-skills db (:implementation_plans/id plan))]
-               (when (seq skills)
-                 (println)
-                 (println (bling/bling [:bold "Associated Skills:"]))
-                 (println)
-                 (doseq [skill skills]
-                   (println (format "%d. [%s] %s"
-                                    (:plan_skills/position skill)
-                                    (:skills/category skill)
-                                    (:skills/name skill)))
-                   (when (:skills/title skill)
-                     (println (format "    %s" (:skills/title skill)))))))
-
-             ;; Show plan result if exists
-             (let [result (plan-results/get-result-by-plan-id db (:implementation_plans/id plan))]
-               (when result
-                 (println)
-                 (println (bling/bling [:bold "Plan Result:"]))
-                 (println (str "  Outcome: " (:plan_results/outcome result)))
-                 (println)
-                 (println (str "  Summary:"))
-                 (println (str "    " (:plan_results/summary result)))
-                 (when (:plan_results/challenges result)
-                   (println)
-                   (println (str "  Challenges:"))
-                   (doseq [line (clojure.string/split-lines (:plan_results/challenges result))]
-                     (println (str "    " line))))
-                 (when (:plan_results/solutions result)
-                   (println)
-                   (println (str "  Solutions:"))
-                   (doseq [line (clojure.string/split-lines (:plan_results/solutions result))]
-                     (println (str "    " line))))
-                 (when (:plan_results/lessons_learned result)
-                   (println)
-                   (println (str "  Lessons Learned:"))
-                   (doseq [line (clojure.string/split-lines (:plan_results/lessons_learned result))]
-                     (println (str "    " line))))))
-
-             ;; Show task lists and tasks
-             (let [task-lists (tasks/list-task-lists-for-plan db (:implementation_plans/id plan))]
-               (when (seq task-lists)
-                 (println)
-                 (println (bling/bling [:bold "Task Lists:"]))
-                 (doseq [task-list task-lists]
-                   (println (str "- [" (:task_lists/id task-list) "] " (:task_lists/name task-list)))
-                   (let [list-tasks (tasks/list-tasks-for-list db (:task_lists/id task-list))]
-                     (doseq [task list-tasks]
-                       (println (str "  " (if (= 1 (:tasks/completed task)) "✓" "○") " "
-                                     "[" (:tasks/id task) "] "
-                                     (:tasks/name task)))))))))
+           (let [;; Gather associated skills
+                 skills (plan-skills/list-plan-skills db (:implementation_plans/id plan))
+                 ;; Gather plan result if exists
+                 result (plan-results/get-result-by-plan-id db (:implementation_plans/id plan))
+                 ;; Gather task lists with their tasks
+                 task-lists (tasks/list-task-lists-for-plan db (:implementation_plans/id plan))
+                 task-lists-with-tasks
+                 (map (fn [task-list]
+                        (let [list-tasks (tasks/list-tasks-for-list db (:task_lists/id task-list))]
+                          {:id (:task_lists/id task-list)
+                           :name (:task_lists/name task-list)
+                           :description (:task_lists/description task-list)
+                           :position (:task_lists/position task-list)
+                           :created-at (:task_lists/created_at task-list)
+                           :updated-at (:task_lists/updated_at task-list)
+                           :tasks (map (fn [task]
+                                         {:id (:tasks/id task)
+                                          :name (:tasks/name task)
+                                          :description (:tasks/description task)
+                                          :completed (= 1 (:tasks/completed task))
+                                          :position (:tasks/position task)
+                                          :assigned-to (:tasks/assigned_to task)
+                                          :created-at (:tasks/created_at task)
+                                          :updated-at (:tasks/updated_at task)
+                                          :completed-at (:tasks/completed_at task)})
+                                       list-tasks)}))
+                      task-lists)]
+             (output/output-data
+              {:type "plan"
+               :data {:id (:implementation_plans/id plan)
+                      :name (:implementation_plans/name plan)
+                      :status (:implementation_plans/status plan)
+                      :title (:implementation_plans/title plan)
+                      :summary (:implementation_plans/summary plan)
+                      :description (:implementation_plans/description plan)
+                      :content (:implementation_plans/content plan)
+                      :created-by (:implementation_plans/created_by plan)
+                      :assigned-to (:implementation_plans/assigned_to plan)
+                      :created-at (:implementation_plans/created_at plan)
+                      :updated-at (:implementation_plans/updated_at plan)
+                      :completed-at (:implementation_plans/completed_at plan)
+                      :skills (map (fn [skill]
+                                     {:position (:plan_skills/position skill)
+                                      :category (:skills/category skill)
+                                      :name (:skills/name skill)
+                                      :title (:skills/title skill)})
+                                   skills)
+                      :result (when result
+                                {:outcome (:plan_results/outcome result)
+                                 :summary (:plan_results/summary result)
+                                 :challenges (:plan_results/challenges result)
+                                 :solutions (:plan_results/solutions result)
+                                 :lessons-learned (:plan_results/lessons_learned result)
+                                 :metrics (:plan_results/metrics result)
+                                 :created-at (:plan_results/created_at result)
+                                 :updated-at (:plan_results/updated_at result)})
+                      :task-lists task-lists-with-tasks}}))
            (do
              (print-error (str "Plan not found: " plan-id-or-name))
              (*exit-fn* 1))))))))
+
 
 (defn cmd-update-plan
   "Update an implementation plan."

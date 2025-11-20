@@ -1,6 +1,7 @@
 (ns clojure-skills.test-utils
   "Shared test utilities for database testing."
-  (:require [clojure.java.io :as io]
+  (:require [clojure.data.json :as json]
+            [clojure.java.io :as io]
             [next.jdbc :as jdbc]
             [clojure-skills.db.migrate :as migrate]))
 
@@ -68,3 +69,9 @@
         (f))
       ;; The transaction will be automatically rolled back when exiting the scope
       )))
+
+(defn parse-json-output
+  "Parse JSON output from CLI command.
+   Returns parsed Clojure data structure with keyword keys."
+  [output]
+  (json/read-str output :key-fn keyword))
