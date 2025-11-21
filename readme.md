@@ -46,8 +46,8 @@ complete teaching prompts for AI agents.
 
 ### Designed for REPL-Driven Development
 
-This project is built around [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light), 
-which provides `clj-nrepl-eval` - a command-line tool for evaluating Clojure code via nREPL. 
+This project is built around [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light),
+which provides `clj-nrepl-eval` - a command-line tool for evaluating Clojure code via nREPL.
 **All skills and prompts assume you're using this workflow.**
 
 **Why MCP-light?**
@@ -65,6 +65,12 @@ bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0
 bbin install https://github.com/bhauman/clojure-mcp-light.git --tag v0.2.0 \
   --as clj-nrepl-eval \
   --main-opts '["-m" "clojure-mcp-light.nrepl-eval"]'
+```
+
+Lets also install clj-paren-repair
+
+```bash
+bbin install https://github.com/bhauman/clojure-mcp-light.git --as clj-paren-repair --main-opts '["-m"  "clojure-mcp-light.paren-repair"]'
 ```
 
 See the [REPL-Driven Development](#repl-driven-development-with-mcp-light) section below for details.
@@ -86,6 +92,17 @@ sudo dnf install clojure java-latest-openjdk
 
 # Ubuntu/Debian
 sudo apt install clojure openjdk-21-jdk
+```
+
+You will also need to
+[install](https://www.graalvm.org/latest/getting-started/macos/) the
+GraalVM.
+
+If you have `sdkman` install, you can install
+
+```bash
+sdk install java 25.0.1-graal
+sdk env
 ```
 
 **Verify installation:**
@@ -378,7 +395,7 @@ clojure-skills skill list | jq '[.skills[]."token-count"] | add'
 # Database skills
 clojure-skills skill list -c libraries/database | jq '.skills'
 
-# Testing skills  
+# Testing skills
 clojure-skills skill list -c testing | jq '.skills[].name'
 
 # Language fundamentals
@@ -620,13 +637,13 @@ clojure-skills db --help
 
 ## REPL-Driven Development with MCP-Light
 
-This project is designed around a REPL-first workflow using `clj-nrepl-eval` from 
-[clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light). **All skills and 
+This project is designed around a REPL-first workflow using `clj-nrepl-eval` from
+[clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light). **All skills and
 prompts assume you're using this tool for interactive development.**
 
 ### What is clj-nrepl-eval?
 
-`clj-nrepl-eval` is a command-line nREPL client that lets you evaluate Clojure code 
+`clj-nrepl-eval` is a command-line nREPL client that lets you evaluate Clojure code
 from the terminal with automatic delimiter repair and persistent sessions.
 
 **Key features:**
@@ -673,7 +690,7 @@ clj-nrepl-eval -p 7889 "(add 10 20)"
    ```bash
    # Discover what's available
    clj-nrepl-eval -p 7889 "(all-ns)"
-   
+
    # Test your hypothesis
    clj-nrepl-eval -p 7889 "(require '[clojure.string :as str])"
    clj-nrepl-eval -p 7889 "(str/upper-case \"hello\")"
@@ -685,11 +702,11 @@ clj-nrepl-eval -p 7889 "(add 10 20)"
    # Define a function
    clj-nrepl-eval -p 7889 "(defn validate-email [email]
      (re-matches #\".+@.+\\..+\" email))"
-   
+
    # Test it immediately
    clj-nrepl-eval -p 7889 "(validate-email \"user@example.com\")"
    # => "user@example.com"
-   
+
    clj-nrepl-eval -p 7889 "(validate-email \"invalid\")"
    # => nil
    ```
@@ -1133,8 +1150,8 @@ The build process:
 
 ### Using Built Prompts with OpenCode
 
-[OpenCode](https://opencode.ai/) is an AI coding agent platform that lets you create custom 
-agents with specialized system prompts. It's the primary way to use clojure-skills prompts 
+[OpenCode](https://opencode.ai/) is an AI coding agent platform that lets you create custom
+agents with specialized system prompts. It's the primary way to use clojure-skills prompts
 for interactive development.
 
 **Why use OpenCode with clojure-skills?**

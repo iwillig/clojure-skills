@@ -6,7 +6,7 @@
    [kaocha.repl :as k]))
 
 (reload/init
-  {:dirs ["src" "dev" "test"]})
+ {:dirs ["src" "dev" "test"]})
 
 (pretty.repl/install-pretty-exceptions)
 
