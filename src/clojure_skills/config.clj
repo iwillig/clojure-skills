@@ -102,7 +102,7 @@
     :context-lines 3}
 
    :output
-   {:format :table
+   {:format :json
     :color  true}
 
    :permissions
