@@ -683,7 +683,7 @@ This is by design - `keys` only validates required/optional keys and registered 
           (mapv #(Long/parseLong %) (clojure.string/split s #","))
           (catch Exception _ ::s/invalid))
         ::s/invalid))
-    (fn [v] (clojure.string/join "," v))))  ; Unform
+    (fn [v] (clojure.string/join "," v))))  ; Unform function
 
 (s/conform ::csv-numbers "1,2,3,4")
 ;; => [1 2 3 4]

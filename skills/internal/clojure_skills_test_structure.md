@@ -28,7 +28,7 @@ For example, we want to create an in memory database
 (use-fixtures :each tu/use-sqlite-database)
 
 (deftest test-example
-  (testing "Given: A databsae with tables"
+  (testing "Given: A database with tables"
     (testing "When: We request all of the table"
       (let [tables (jdbc/execute! tu/*connection*
                                   ["SELECT name FROM sqlite_master WHERE type='table'"])

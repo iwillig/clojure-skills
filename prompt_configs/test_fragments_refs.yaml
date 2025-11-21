@@ -1,0 +1,11 @@
+name: test_fragments_refs
+title: Test Fragments and References
+description: Test prompt for fragment and reference testing
+author: Test Author
+date: 2025-01-01
+fragments:
+  - skills/language/clojure_intro.md
+  - skills/language/clojure_repl.md
+references:
+  - skills/libraries/database/honeysql.md
+  - skills/libraries/database/next_jdbc.md

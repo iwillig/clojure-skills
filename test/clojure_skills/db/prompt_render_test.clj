@@ -7,40 +7,17 @@
             [clojure.string :as str]
             [next.jdbc :as jdbc]))
 
+;; Shared test database setup - each test gets fresh DB
+(use-fixtures :each test-utils/use-sqlite-database)
 
-
-
-;; Shared test database setup - syncs once for all tests
-(def ^:dynamic *test-datasource* nil)
-
-(defn test-fixture-once [f]
-  ;; Use file-based database since in-memory doesn't play well with Ragtime
-  (let [db-path (str "test-prompt-render-" (random-uuid) ".db")
-        db-spec {:dbtype "sqlite" :dbname db-path}
-        datasource (jdbc/get-datasource db-spec)]
-    (try
-      ;; Run migrations once
-      (test-utils/setup-test-db db-spec)
-      ;; Sync data once for all tests
-      (sync/sync-all datasource (config/load-config))
-      ;; Bind datasource for use in tests
-      (binding [*test-datasource* datasource]
-        (f))
-      (finally
-        ;; Clean up the test database file
-        (test-utils/cleanup-test-db db-path)))))
-
-(defn test-fixture-each [f]
-  ;; Each test runs in its own transaction
-  ((test-utils/with-transaction-fixture *test-datasource*) f))
-
-(use-fixtures :once test-fixture-once)
-(use-fixtures :each test-fixture-each)
+;; Helper to sync data for tests that need it
+(defn sync-test-data! []
+  (sync/sync-all test-utils/*connection* (config/load-config)))
 
 (deftest get-prompt-with-fragments-test
   (testing "get-prompt-with-fragments returns prompt with fragment references"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (sync-test-data!)
+    (let [db test-utils/*connection*
           result (pr/get-prompt-with-fragments db "test_fragments_refs")]
 
       (is (some? result))
@@ -51,14 +28,14 @@
       (is (>= (count (:fragment-references result)) 3))))
 
   (testing "get-prompt-with-fragments with non-existent prompt returns nil"
-    (let [db test-utils/*test-db*
+    (let [db test-utils/*connection*
           result (pr/get-prompt-with-fragments db "non-existent")]
       (is (nil? result)))))
 
 (deftest get-skill-details-test
   (testing "get-skill-details returns skill data"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (sync-test-data!)
+    (let [db test-utils/*connection*
           result (pr/get-skill-details db "clojure_intro")]
       (is (some? result))
       (is (= "clojure_intro" (:skills/name result)))
@@ -67,15 +44,14 @@
       (is (str/includes? (:skills/content result) "Clojure Introduction"))))
 
   (testing "get-skill-details with non-existent skill returns nil"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (let [db test-utils/*connection*
           result (pr/get-skill-details db "non-existent")]
       (is (nil? result)))))
 
 (deftest list-all-skill-names-test
   (testing "list-all-skill-names returns all skill names"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (sync-test-data!)
+    (let [db test-utils/*connection*
           result (pr/list-all-skill-names db)]
       (is (seq result))
       ;; Should have many skills
@@ -88,8 +64,8 @@
 
 (deftest get-prompt-fragment-skills-test
   (testing "get-prompt-fragment-skills returns skills for a prompt"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (sync-test-data!)
+    (let [db test-utils/*connection*
           ;; Get test_fragments_refs prompt ID
           prompt (first (jdbc/execute! db ["SELECT id FROM prompts WHERE name = ?" "test_fragments_refs"]))
           prompt-id (:prompts/id prompt)
@@ -109,15 +85,14 @@
         (is (> (count (:skills/content skill)) 100)))))
 
   (testing "get-prompt-fragment-skills with non-existent prompt returns empty"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (let [db test-utils/*connection*
           result (pr/get-prompt-fragment-skills db 99999)]
       (is (empty? result)))))
 
 (deftest render-prompt-as-plain-markdown-test
   (testing "render-prompt-as-plain-markdown returns markdown string"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (sync-test-data!)
+    (let [db test-utils/*connection*
           prompt (first (jdbc/execute! db ["SELECT * FROM prompts WHERE name = ?" "test_fragments_refs"]))
           result (pr/render-prompt-as-plain-markdown db prompt)]
       (is (string? result))
@@ -132,8 +107,7 @@
       (is (str/includes? result "next.jdbc"))))
 
   (testing "render-prompt-as-plain-markdown preserves skill frontmatter"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (let [db test-utils/*connection*
           prompt (first (jdbc/execute! db ["SELECT * FROM prompts WHERE name = ?" "test_fragments_refs"]))
           result (pr/render-prompt-as-plain-markdown db prompt)]
       ;; Should include YAML frontmatter from skills
@@ -142,8 +116,7 @@
       (is (str/includes? result "description:"))))
 
   (testing "render-prompt-as-plain-markdown with empty prompt content"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (let [db test-utils/*connection*
           ;; Create a minimal prompt
           prompt {:prompts/id 99999
                   :prompts/content ""}
@@ -152,8 +125,7 @@
       (is (string? result))))
 
   (testing "render-prompt-as-plain-markdown output structure"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (let [db test-utils/*connection*
           prompt (first (jdbc/execute! db ["SELECT * FROM prompts WHERE name = ?" "test_fragments_refs"]))
           result (pr/render-prompt-as-plain-markdown db prompt)
           lines (str/split-lines result)]
@@ -167,8 +139,8 @@
 
 (deftest integration-render-workflow-test
   (testing "complete workflow: query prompt, get skills, render markdown"
-    (let [db test-utils/*test-db*
-          _ (sync/sync-all db (config/load-config))
+    (sync-test-data!)
+    (let [db test-utils/*connection*
 
           ;; Step 1: Get prompt with fragments
           prompt-with-frags (pr/get-prompt-with-fragments db "test_fragments_refs")
@@ -194,7 +166,7 @@
               (is (str/includes? markdown (:skills/content skill))))]))
 
   (testing "workflow handles prompts with no fragments"
-    (let [db test-utils/*test-db*
+    (let [db test-utils/*connection*
           ;; Get a prompt without fragments (if exists) or use test prompt
           prompt (first (jdbc/execute! db ["SELECT * FROM prompts WHERE name = ?" "test_fragments_refs"]))
           ;; Even with fragments, the render should work

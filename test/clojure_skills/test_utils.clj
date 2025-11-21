@@ -30,6 +30,8 @@
   (let [conn     (memory-sqlite-database)
         database (.getDatabase ^SQLiteConnection conn)
         _        (.enable_load_extension ^DB database true)
+        ;; Enable foreign keys for CASCADE delete support
+        _        (jdbc/execute! conn ["PRAGMA foreign_keys = ON"])
         config   (migration-config conn)]
     (try
       (binding [*connection* conn

@@ -4,37 +4,11 @@
    [clojure.test :refer [deftest testing is use-fixtures]]
    [clojure-skills.cli :as cli]
    [clojure-skills.config :as config]
-   [clojure-skills.db.migrate :as migrate]
    [clojure-skills.test-utils :as tu]
    [next.jdbc :as jdbc]))
 
 ;; Test database and fixture
-(def test-db-path (str "test-cli-subcommands-" (random-uuid) ".db"))
-(def ^:dynamic *test-db* nil)
-
-(defn with-test-db
-  "Fixture to create and migrate a test database."
-  [f]
-  (let [db-spec {:dbtype "sqlite" :dbname test-db-path}
-        ds (jdbc/get-datasource db-spec)]
-    ;; Clean up any existing test db
-    (try
-      (.delete (java.io.File. test-db-path))
-      (catch Exception _))
-
-    ;; Run migrations
-    (migrate/migrate-db db-spec)
-
-    ;; Run tests with datasource
-    (binding [*test-db* ds]
-      (f))
-
-    ;; Clean up
-    (try
-      (.delete (java.io.File. test-db-path))
-      (catch Exception _))))
-
-(use-fixtures :each with-test-db)
+(use-fixtures :each tu/use-sqlite-database)
 
 ;; Helper functions
 (defn mock-exit
@@ -45,10 +19,10 @@
 (defn mock-load-config-and-db
   "Mock load-config-and-db with proper config structure."
   []
-  [{:database {:path test-db-path}
+  [{:database {:path ":memory:"}
     :skills-dir "skills"
     :prompts-dir "prompts"}
-   *test-db*])
+   tu/*connection*])
 
 (defn capture-output
   "Capture stdout output from a function."
@@ -90,7 +64,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add test data first to avoid empty database issue
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO skills (name, category, path, content, file_hash, size_bytes, token_count) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)"
                         "test-skill" "testing" "test.md" "content" "hash" 100 25])
@@ -130,7 +104,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add test data
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO skills (name, category, path, content, file_hash, size_bytes, token_count) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)"
                         "test-skill" "testing" "test.md" "test content for searching" "hash" 100 25])
@@ -144,7 +118,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add test data
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO skills (name, category, path, content, file_hash, size_bytes, token_count) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)"
                         "test-skill" "testing" "test.md" "content" "hash" 100 25])
@@ -158,7 +132,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add test data
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO skills (name, category, path, content, file_hash, size_bytes, token_count) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)"
                         "test-skill" "testing" "test.md" "test content" "hash" 100 25])
@@ -174,7 +148,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add test data
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO prompts (name, path, content, file_hash, size_bytes, token_count) 
                         VALUES (?, ?, ?, ?, ?, ?)"
                         "test-prompt" "test-prompt.md" "test prompt content" "hash" 100 25])
@@ -188,7 +162,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add test data
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO prompts (name, path, content, file_hash, size_bytes, token_count) 
                         VALUES (?, ?, ?, ?, ?, ?)"
                         "list-test-prompt" "list-test.md" "content" "hash" 200 50])
@@ -201,7 +175,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add test prompt data
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO prompts (name, title, author, path, content, file_hash, size_bytes, token_count) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
                         "show-test-prompt" "Test Prompt Title" "Test Author"
@@ -223,7 +197,7 @@
     (binding [cli/*exit-fn* mock-exit]
       (with-redefs [cli/load-config-and-db mock-load-config-and-db]
         ;; Add prompt without skills
-        (jdbc/execute! *test-db*
+        (jdbc/execute! tu/*connection*
                        ["INSERT INTO prompts (name, path, content, file_hash, size_bytes, token_count) 
                         VALUES (?, ?, ?, ?, ?, ?)"
                         "no-skills-prompt" "no-skills.md" "content" "hash" 100 25])

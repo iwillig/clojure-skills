@@ -15,6 +15,7 @@ matche = "matche"
 # Clojure function names
 juxt = "juxt"
 uncomplete = "uncomplete"
+Unform = "Unform"  # clojure.spec unform function
 
 [files]
 # Respect gitignore by default

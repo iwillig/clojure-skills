@@ -49,8 +49,8 @@
   (testing "output-data handles nested structures"
     (let [test-data {:type :nested
                      :data {:metadata {:created-at "2025-01-01"
-                                      :updated-at "2025-01-02"}
-                           :content "test content"}}
+                                       :updated-at "2025-01-02"}
+                            :content "test content"}}
           output (with-out-str (output/output-data test-data))
           parsed (parse-json-output output)]
       (is (= "nested" (:type parsed)))

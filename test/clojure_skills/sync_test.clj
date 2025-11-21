@@ -1,10 +1,14 @@
 (ns clojure-skills.sync-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [clojure-skills.sync :as sync]
-            [clojure-skills.db.core :as db]
-            [clojure-skills.db.migrate :as migrate]
+            [clojure-skills.test-utils :as tu]
             [clojure.java.io :as io]
             [clojure.string :as str]))
+
+;; Use shared test database fixture
+;; Only the integration test (test-sync-skill-detects-changes) uses the database
+;; Unit tests (hash, parse, etc.) work without database access
+(use-fixtures :each tu/use-sqlite-database)
 
 (deftest test-compute-hash
   (testing "compute-hash generates consistent SHA-256 hash"
@@ -96,76 +100,57 @@
           (is (pos? (:token_count result))))))))
 
 (deftest test-sync-skill-detects-changes
-  (testing "sync-skill correctly detects when file has changed"
-    ;; Create a temporary test database
-    (let [test-db-path "test-sync-db.db"
-          test-config {:database {:path test-db-path}
-                       :project {:root (System/getProperty "user.dir")
-                                 :skills-dir "skills"
-                                 :prompts-dir "prompts"}}]
+  (testing "Given: A database and temporary test skill file"
+    ;; Use the shared test database connection from fixture
+    (let [test-db tu/*connection*
+          test-skill-dir "test-skills"
+          test-skill-path (str test-skill-dir "/test_skill.md")
+          initial-content "---\ntitle: Test Skill\ndescription: A test skill\n---\n# Test Content\n\nInitial content here."]
+
       (try
-        ;; Clean up any existing test database
-        (when (.exists (io/file test-db-path))
-          (io/delete-file test-db-path))
+        ;; Create test directory and file
+        (.mkdirs (io/file test-skill-dir))
+        (spit test-skill-path initial-content)
 
-        ;; Initialize test database using Ragtime migrations
-        (let [test-db (db/get-db test-config)]
-          (migrate/migrate-db test-db)
+        (testing "When: First sync is performed"
+          (sync/sync-skill test-db test-skill-path)
+          (let [retrieved (sync/get-skill-by-path test-db test-skill-path)]
+            (testing "Then: Skill is inserted with correct hash"
+              (is (some? retrieved) "Skill should be inserted")
+              (is (= (:skills/file_hash retrieved)
+                     (sync/compute-hash initial-content))
+                  "File hash should match initial content"))))
 
-          ;; Create a temporary test skill file
-          (let [test-skill-dir "test-skills"
-                test-skill-path (str test-skill-dir "/test_skill.md")
-                initial-content "---\ntitle: Test Skill\ndescription: A test skill\n---\n# Test Content\n\nInitial content here."]
+        (testing "When: Second sync with unchanged content"
+          (let [initial-retrieved (sync/get-skill-by-path test-db test-skill-path)
+                initial-updated-at (:skills/updated_at initial-retrieved)]
+            ;; Small delay to ensure timestamp would change if updated
+            (Thread/sleep 10)
+            (sync/sync-skill test-db test-skill-path)
+            (let [after-sync (sync/get-skill-by-path test-db test-skill-path)]
+              (testing "Then: Skill is not updated (timestamp unchanged)"
+                (is (= (:skills/updated_at after-sync) initial-updated-at)
+                    "updated_at should not change when content unchanged")))))
 
-            (try
-              ;; Create test directory and file
-              (.mkdirs (io/file test-skill-dir))
-              (spit test-skill-path initial-content)
-
-              ;; First sync - should insert the skill
-              (testing "First sync inserts the skill"
-                (sync/sync-skill test-db test-skill-path)
-                (let [retrieved (sync/get-skill-by-path test-db test-skill-path)]
-                  (is (some? retrieved) "Skill should be inserted")
-                  (is (= (:skills/file_hash retrieved)
-                         (sync/compute-hash initial-content))
-                      "File hash should match initial content")))
-
-              ;; Second sync with same content - should skip
-              (testing "Second sync with unchanged content should skip"
-                (let [initial-retrieved (sync/get-skill-by-path test-db test-skill-path)
-                      initial-updated-at (:skills/updated_at initial-retrieved)]
-                  ;; Small delay to ensure timestamp would change if updated
-                  (Thread/sleep 10)
-                  (sync/sync-skill test-db test-skill-path)
-                  (let [after-sync (sync/get-skill-by-path test-db test-skill-path)]
-                    (is (= (:skills/updated_at after-sync) initial-updated-at)
-                        "updated_at should not change when content unchanged"))))
-
-              ;; Modify the file - should detect change
-              (testing "Sync detects when file content changes"
-                (let [modified-content "---\ntitle: Test Skill\ndescription: A test skill\n---\n# Test Content\n\nModified content here!"
-                      initial-retrieved (sync/get-skill-by-path test-db test-skill-path)
-                      initial-hash (:skills/file_hash initial-retrieved)]
-                  (spit test-skill-path modified-content)
-                  ;; Small delay to ensure timestamp changes
-                  (Thread/sleep 10)
-                  (sync/sync-skill test-db test-skill-path)
-                  (let [updated-retrieved (sync/get-skill-by-path test-db test-skill-path)
-                        new-hash (:skills/file_hash updated-retrieved)]
-                    (is (not= initial-hash new-hash)
-                        "File hash should change when content changes")
-                    (is (= new-hash (sync/compute-hash modified-content))
-                        "New hash should match modified content"))))
-
-              (finally
-                ;; Clean up test skill file and directory
-                (when (.exists (io/file test-skill-path))
-                  (io/delete-file test-skill-path))
-                (when (.exists (io/file test-skill-dir))
-                  (.delete (io/file test-skill-dir)))))))
+        (testing "When: File content is modified and synced"
+          (let [modified-content "---\ntitle: Test Skill\ndescription: A test skill\n---\n# Test Content\n\nModified content here!"
+                initial-retrieved (sync/get-skill-by-path test-db test-skill-path)
+                initial-hash (:skills/file_hash initial-retrieved)]
+            (spit test-skill-path modified-content)
+            ;; Small delay to ensure timestamp changes
+            (Thread/sleep 10)
+            (sync/sync-skill test-db test-skill-path)
+            (let [updated-retrieved (sync/get-skill-by-path test-db test-skill-path)
+                  new-hash (:skills/file_hash updated-retrieved)]
+              (testing "Then: Skill is updated with new hash"
+                (is (not= initial-hash new-hash)
+                    "File hash should change when content changes")
+                (is (= new-hash (sync/compute-hash modified-content))
+                    "New hash should match modified content")))))
 
         (finally
-          ;; Clean up test database
-          (when (.exists (io/file test-db-path))
-            (io/delete-file test-db-path)))))))
+          ;; Clean up test skill file and directory
+          (when (.exists (io/file test-skill-path))
+            (io/delete-file test-skill-path))
+          (when (.exists (io/file test-skill-dir))
+            (.delete (io/file test-skill-dir))))))))

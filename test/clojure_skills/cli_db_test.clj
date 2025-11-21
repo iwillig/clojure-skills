@@ -5,7 +5,7 @@
    [clojure-skills.cli :as cli]
    [clojure-skills.config :as config]
    [clojure-skills.test-utils :as tu]
-   [matcher-combinators.test]
+   [matcher-combinators.test :refer [match?]]
    [next.jdbc :as jdbc]))
 
 ;; Use the shared test fixture
@@ -35,13 +35,13 @@
    tu/*connection*])
 
 (deftest test-example
-  (testing "Given: A databsae with tables"
-    (testing "When: We request all of the table"
+  (testing "Given: A database with tables after migrations"
+    (testing "When: We request all of the tables"
       (let [tables (jdbc/execute! tu/*connection*
                                   ["SELECT name FROM sqlite_master WHERE type='table'"])
             table-names (set (map :sqlite_master/name tables))]
-        (testing "Then: the set should contains the tables we care about"
-          (is (not (contains? table-names "skills")) "Skills table exists")
+        (testing "Then: the set should contain the tables created by migrations"
+          (is (contains? table-names "skills") "Skills table exists")
           (is (contains? table-names "prompts") "Prompts table exists"))))))
 
 ;; Tests for db init command
