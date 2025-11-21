@@ -6,6 +6,9 @@ description: |
   data, printing tables, or annotating code with error messages. Use when the user mentions
   "pretty print", "format exception", "colored output", "ANSI", "stack trace", "hexdump",
   "binary output", "table formatting", or "code annotations".
+sources:
+  - https://github.com/clj-commons/pretty
+  - https://cljdoc.org/d/org.clj-commons/pretty
 ---
 
 # clj-commons/pretty

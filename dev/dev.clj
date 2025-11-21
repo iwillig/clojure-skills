@@ -1,11 +1,17 @@
 (ns dev
   (:require
+   [clj-commons.pretty.repl :as pretty.repl]
    [clj-kondo.core :as clj-kondo]
-   [clojure.tools.namespace.repl :as repl]
+   [clj-reload.core :as reload]
    [kaocha.repl :as k]))
 
+(reload/init
+  {:dirs ["src" "dev" "test"]})
+
+(pretty.repl/install-pretty-exceptions)
+
 (defn refresh []
-  (repl/refresh))
+  (reload/reload))
 
 (defn lint
   "Lint the entire project (src and test directories)."

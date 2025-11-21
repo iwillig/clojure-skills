@@ -8,12 +8,13 @@ fragments:
   - skills/language/clojure_intro.md
   - skills/language/clojure_repl.md
   - skills/clojure_mcp/clojure_eval.md
+  - skills/llm_agent/agent_loop.md
 
   # Command-line tools
   - skills/tooling/clojure_mcp_light.md
   - skills/libraries/metadata/metazoa.md
   - skills/tooling/hashp.md
-  - skills/tooling/data_formats/pretty.md
+  - skills/libraries/logging/pretty.md
   - skills/tooling/clojure_lsp_api
   - skills/tooling/clj_paren_repair.md
 references: []

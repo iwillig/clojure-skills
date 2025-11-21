@@ -3,6 +3,10 @@
   "theme": "tokyonight",
   "model": "anthropic/claude-sonnet-4-5",
   "autoupdate": true,
+  "tools": {
+    "todowrite": false,
+    "todoread": false
+  },
   "agent": {
 
     "clojure_builder": {
@@ -20,7 +24,26 @@
         "write": "ask",
         "edit": "ask"
       }
+    },
+
+    "clojure_skill_builder": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "prompt": "{file:./clojure_skill_builder.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "read": true,
+        "bash": true,
+        "todowrite": false,
+        "todoread": false
+      },
+      "permission": {
+        "write": "ask",
+        "edit": "ask"
+      }
     }
+
+
   },
   "mcp": {},
   "lsp": {
