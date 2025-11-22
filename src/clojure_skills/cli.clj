@@ -754,7 +754,7 @@
 
 (defn cmd-show-task-list
   "Show detailed information about a task list."
-  [{:keys [_arguments]}]
+  [{:keys [_arguments json human]}]
   (let [list-id (first _arguments)]
     (validate-non-blank list-id "Task list ID cannot be empty")
     (handle-command-errors
@@ -1149,6 +1149,16 @@
   {:command "clojure-skills"
    :description "Clojure skills and prompts management with SQLite backend"
    :version "0.1.0"
+   :opts [{:option "json"
+           :short "j"
+           :as "Output as JSON (default)"
+           :type :with-flag
+           :default nil}
+          {:option "human"
+           :short "H"
+           :as "Output in human-readable format"
+           :type :with-flag
+           :default nil}]
    :subcommands
    [{:command "db"
      :description "Database operations"

@@ -190,23 +190,25 @@
 ;; ============================================================
 
 (defn get-output-format
-  "Determine output format from CLI flag, config, or default.
+  "Determine output format from CLI flags, config, or default.
    
    Priority:
-   1. CLI flag (true = :json, false = :human)
-   2. Config file setting (:output :format)
-   3. Default to :json
+   1. CLI --json flag (overrides everything)
+   2. CLI --human flag (overrides config)
+   3. Config file setting (:output :format)
+   4. Default to :json
    
    Args:
-     cli-json-flag - Boolean or nil from CLI --json flag
+     json-flag - Boolean or nil from CLI --json flag
+     human-flag - Boolean or nil from CLI --human flag
      config - Configuration map
    
    Returns:
      :json or :human"
-  [cli-json-flag config]
+  [json-flag human-flag config]
   (cond
-    (true? cli-json-flag) :json
-    (false? cli-json-flag) :human
+    (true? json-flag) :json
+    (true? human-flag) :human
     :else (get-in config [:output :format] :json)))
 
 (defn output
