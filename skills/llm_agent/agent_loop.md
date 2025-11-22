@@ -22,6 +22,7 @@ Task → Gather Context → Take Action → Verify Output
 ```
 
 **Why this matters:**
+
 - Catch errors before the user sees them
 - Show your thought process
 - Ensure changes work correctly
