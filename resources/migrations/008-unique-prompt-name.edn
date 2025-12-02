@@ -1,9 +1,0 @@
-{:id "008-unique-prompt-name"
- :up
- ["DELETE FROM prompts WHERE path LIKE '/home/%'"
-  "DROP INDEX IF EXISTS idx_prompts_name"
-  "CREATE UNIQUE INDEX idx_prompts_name ON prompts(name)"]
-
- :down
- ["DROP INDEX IF EXISTS idx_prompts_name"
-  "CREATE INDEX idx_prompts_name ON prompts(name)"]}

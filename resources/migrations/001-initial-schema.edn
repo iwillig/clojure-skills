@@ -3,6 +3,7 @@
  :up
  ["PRAGMA foreign_keys = ON"
 
+  ;; Skills table
   "CREATE TABLE IF NOT EXISTS skills (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      path TEXT NOT NULL UNIQUE,
@@ -22,6 +23,7 @@
   "CREATE INDEX IF NOT EXISTS idx_skills_name ON skills(name)"
   "CREATE INDEX IF NOT EXISTS idx_skills_hash ON skills(file_hash)"
 
+  ;; Prompts table (includes fragment_refs column from migration 006)
   "CREATE TABLE IF NOT EXISTS prompts (
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      path TEXT NOT NULL UNIQUE,
@@ -33,25 +35,65 @@
      file_hash TEXT NOT NULL,
      size_bytes INTEGER NOT NULL,
      token_count INTEGER,
+     fragment_refs TEXT,
      created_at TEXT NOT NULL DEFAULT (datetime('now')),
      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
    )"
 
-  "CREATE INDEX IF NOT EXISTS idx_prompts_name ON prompts(name)"
   "CREATE INDEX IF NOT EXISTS idx_prompts_hash ON prompts(file_hash)"
+  ;; Unique index on name (from migration 008)
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_prompts_name ON prompts(name)"
 
-  "CREATE TABLE IF NOT EXISTS prompt_skills (
-     prompt_id INTEGER NOT NULL,
+  ;; Prompt fragments table (from migration 006)
+  "CREATE TABLE IF NOT EXISTS prompt_fragments (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     name TEXT NOT NULL UNIQUE,
+     title TEXT,
+     description TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+   )"
+
+  "CREATE INDEX IF NOT EXISTS idx_prompt_fragments_name ON prompt_fragments(name)"
+
+  ;; Prompt fragment skills join table (from migration 006)
+  "CREATE TABLE IF NOT EXISTS prompt_fragment_skills (
+     fragment_id INTEGER NOT NULL,
      skill_id INTEGER NOT NULL,
      position INTEGER NOT NULL,
-     PRIMARY KEY (prompt_id, skill_id),
-     FOREIGN KEY (prompt_id) REFERENCES prompts(id) ON DELETE CASCADE,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     PRIMARY KEY (fragment_id, skill_id),
+     FOREIGN KEY (fragment_id) REFERENCES prompt_fragments(id) ON DELETE CASCADE,
      FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE
    )"
 
-  "CREATE INDEX IF NOT EXISTS idx_prompt_skills_prompt ON prompt_skills(prompt_id)"
-  "CREATE INDEX IF NOT EXISTS idx_prompt_skills_skill ON prompt_skills(skill_id)"
+  "CREATE INDEX IF NOT EXISTS idx_prompt_fragment_skills_fragment ON prompt_fragment_skills(fragment_id)"
+  "CREATE INDEX IF NOT EXISTS idx_prompt_fragment_skills_skill ON prompt_fragment_skills(skill_id)"
 
+  ;; Prompt references table (from migration 006, with FIXED nullable target_prompt_id)
+  "CREATE TABLE IF NOT EXISTS prompt_references (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     source_prompt_id INTEGER NOT NULL,
+     target_prompt_id INTEGER,
+     target_fragment_id INTEGER,
+     reference_type TEXT NOT NULL CHECK(reference_type IN ('prompt', 'fragment')),
+     position INTEGER NOT NULL,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     FOREIGN KEY (source_prompt_id) REFERENCES prompts(id) ON DELETE CASCADE,
+     FOREIGN KEY (target_prompt_id) REFERENCES prompts(id) ON DELETE CASCADE,
+     FOREIGN KEY (target_fragment_id) REFERENCES prompt_fragments(id) ON DELETE CASCADE,
+     CONSTRAINT chk_target_reference CHECK (
+       (target_prompt_id IS NOT NULL AND target_fragment_id IS NULL) OR
+       (target_prompt_id IS NULL AND target_fragment_id IS NOT NULL)
+     )
+   )"
+
+  "CREATE INDEX IF NOT EXISTS idx_prompt_references_source ON prompt_references(source_prompt_id)"
+  "CREATE INDEX IF NOT EXISTS idx_prompt_references_target_prompt ON prompt_references(target_prompt_id)"
+  "CREATE INDEX IF NOT EXISTS idx_prompt_references_target_fragment ON prompt_references(target_fragment_id)"
+  "CREATE INDEX IF NOT EXISTS idx_prompt_references_type ON prompt_references(reference_type)"
+
+  ;; Skills FTS table
   "CREATE VIRTUAL TABLE IF NOT EXISTS skills_fts USING fts5(
      path,
      category,
@@ -63,6 +105,7 @@
      content_rowid='id'
    )"
 
+  ;; Skills FTS triggers
   "CREATE TRIGGER IF NOT EXISTS skills_ai AFTER INSERT ON skills BEGIN
      INSERT INTO skills_fts(rowid, path, category, name, title, description, content)
      VALUES (new.id, new.path, new.category, new.name, new.title, new.description, new.content);
@@ -80,6 +123,7 @@
      VALUES (new.id, new.path, new.category, new.name, new.title, new.description, new.content);
    END"
 
+  ;; Prompts FTS table
   "CREATE VIRTUAL TABLE IF NOT EXISTS prompts_fts USING fts5(
      path,
      name,
@@ -91,6 +135,7 @@
      content_rowid='id'
    )"
 
+  ;; Prompts FTS triggers
   "CREATE TRIGGER IF NOT EXISTS prompts_ai AFTER INSERT ON prompts BEGIN
      INSERT INTO prompts_fts(rowid, path, name, title, author, description, content)
      VALUES (new.id, new.path, new.name, new.title, new.author, new.description, new.content);
@@ -117,11 +162,18 @@
   "DROP TRIGGER IF EXISTS skills_ad"
   "DROP TRIGGER IF EXISTS skills_ai"
   "DROP TABLE IF EXISTS skills_fts"
-  "DROP INDEX IF EXISTS idx_prompt_skills_skill"
-  "DROP INDEX IF EXISTS idx_prompt_skills_prompt"
-  "DROP TABLE IF EXISTS prompt_skills"
-  "DROP INDEX IF EXISTS idx_prompts_hash"
+  "DROP INDEX IF EXISTS idx_prompt_references_type"
+  "DROP INDEX IF EXISTS idx_prompt_references_target_fragment"
+  "DROP INDEX IF EXISTS idx_prompt_references_target_prompt"
+  "DROP INDEX IF EXISTS idx_prompt_references_source"
+  "DROP TABLE IF EXISTS prompt_references"
+  "DROP INDEX IF EXISTS idx_prompt_fragment_skills_skill"
+  "DROP INDEX IF EXISTS idx_prompt_fragment_skills_fragment"
+  "DROP TABLE IF EXISTS prompt_fragment_skills"
+  "DROP INDEX IF EXISTS idx_prompt_fragments_name"
+  "DROP TABLE IF EXISTS prompt_fragments"
   "DROP INDEX IF EXISTS idx_prompts_name"
+  "DROP INDEX IF EXISTS idx_prompts_hash"
   "DROP TABLE IF EXISTS prompts"
   "DROP INDEX IF EXISTS idx_skills_hash"
   "DROP INDEX IF EXISTS idx_skills_name"

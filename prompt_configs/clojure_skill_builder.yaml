@@ -13,9 +13,7 @@ fragments:
   - skills/libraries/metadata/metazoa.md
   - skills/tooling/hashp.md
   - skills/libraries/logging/pretty.md
-  - skills/tooling/clojure_lsp_api
+  - skills/tooling/clojure_lsp_api.md
   - skills/tooling/clj_paren_repair.md
   - skills/tooling/clojure_mcp_light.md
-  - skills/libraries/data_formats/pretty.md
-
-  references: []
+references: []
