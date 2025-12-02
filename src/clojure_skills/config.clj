@@ -106,10 +106,7 @@
     :color  true}
 
    :permissions
-   {:plan      false
-    :task      false
-    :task-list false
-    :prompt    false}})
+   {:prompt    false}})
 
 (defn get-config-file-path
   "Get path to config.edn file."
