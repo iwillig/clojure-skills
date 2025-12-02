@@ -262,14 +262,11 @@
     (println (bling/bling [:bold (format "Found %d skills matching \"%s\"" count query)]))
     (when (seq skills)
       (println)
-      (table/print-table
-       [:name :category :size-kb :tokens]
-       (map (fn [skill]
-              {:name (:name skill)
-               :category (:category skill)
-               :size-kb (format "%.1f" (/ (:size-bytes skill) 1024.0))
-               :tokens (:token-count skill)})
-            skills))
+      (doseq [skill skills]
+        (println (bling/bling [:bold (str "• " (:name skill))] [:dim (str " (" (:category skill) ")")]))
+        (when-let [snippet (:snippet skill)]
+          (println (str "  " snippet)))
+        (println))
       (println))))
 
 ;; ------------------------------------------------------------
@@ -332,13 +329,11 @@
     (println (bling/bling [:bold (format "Found %d prompts matching \"%s\"" count query)]))
     (when (seq prompts)
       (println)
-      (table/print-table
-       [:name :size-kb :tokens]
-       (map (fn [prompt]
-              {:name (:name prompt)
-               :size-kb (format "%.1f" (/ (:size-bytes prompt) 1024.0))
-               :tokens (:token-count prompt)})
-            prompts))
+      (doseq [prompt prompts]
+        (println (bling/bling [:bold (str "• " (:name prompt))]))
+        (when-let [snippet (:snippet prompt)]
+          (println (str "  " snippet)))
+        (println))
       (println))))
 
 ;; ------------------------------------------------------------

@@ -181,12 +181,14 @@
            :query query
            :category category
            :count (count skills)
-           :skills (map (fn [skill]
-                          {:name (:skills/name skill)
-                           :category (:skills/category skill)
-                           :size-bytes (or (:skills/size_bytes skill) 0)
-                           :token-count (or (:skills/token_count skill) 0)})
-                        skills)}))))))
+            :skills (map (fn [skill]
+                           {:name (:skills/name skill)
+                            :category (:skills/category skill)
+                            :size-bytes (or (:skills/size_bytes skill) 0)
+                            :token-count (or (:skills/token_count skill) 0)
+                            :snippet (:snippet skill)
+                            :rank (:skills_fts/rank skill)})
+                         skills)}))))))
 
 (defn cmd-search-prompts
   "Search prompts."
@@ -203,11 +205,13 @@
           {:type :prompt-search-results
            :query query
            :count (count prompts)
-           :prompts (map (fn [prompt]
-                           {:name (:prompts/name prompt)
-                            :size-bytes (or (:prompts/size_bytes prompt) 0)
-                            :token-count (or (:prompts/token_count prompt) 0)})
-                         prompts)}))))))
+            :prompts (map (fn [prompt]
+                            {:name (:prompts/name prompt)
+                             :size-bytes (or (:prompts/size_bytes prompt) 0)
+                             :token-count (or (:prompts/token_count prompt) 0)
+                             :snippet (:snippet prompt)
+                             :rank (:prompts_fts/rank prompt)})
+                          prompts)}))))))
 
 (defn cmd-list-skills
   "List all skills."
