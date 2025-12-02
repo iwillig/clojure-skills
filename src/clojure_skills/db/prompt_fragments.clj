@@ -183,17 +183,25 @@
 
     ;; Note: Using raw SQL for INSERT...RETURNING because HoneySQL has issues
     ;; with SQLite's RETURNING clause
-    (jdbc/execute-one!
-     db
-     ["INSERT INTO prompt_references 
-       (source_prompt_id, target_prompt_id, target_fragment_id, reference_type, position)
-       VALUES (?, ?, ?, ?, ?)
-       RETURNING *"
-      (:source_prompt_id reference-map)
-      (:target_prompt_id reference-map)
-      (:target_fragment_id reference-map)
-      (:reference_type reference-map)
-      (:position reference-map)])))
+    ;; Build SQL dynamically based on which target is provided
+    (let [has-target-prompt (some? (:target_prompt_id reference-map))
+          columns (if has-target-prompt
+                    "source_prompt_id, target_prompt_id, reference_type, position"
+                    "source_prompt_id, target_fragment_id, reference_type, position")
+          placeholders (if has-target-prompt "?, ?, ?, ?" "?, ?, ?, ?")
+          values (if has-target-prompt
+                   [(:source_prompt_id reference-map)
+                    (:target_prompt_id reference-map)
+                    (:reference_type reference-map)
+                    (:position reference-map)]
+                   [(:source_prompt_id reference-map)
+                    (:target_fragment_id reference-map)
+                    (:reference_type reference-map)
+                    (:position reference-map)])]
+      (jdbc/execute-one!
+       db
+       (into [(str "INSERT INTO prompt_references (" columns ") VALUES (" placeholders ") RETURNING *")]
+             values)))))
 
 (defn get-references-for-prompt
   "Get all references for a specific prompt, ordered by position."

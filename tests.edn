@@ -1,0 +1,9 @@
+#kaocha/v1
+{:tests      [{:id           :unit
+               :test-paths   ["test"]
+               :source-paths ["src"]}]
+ :plugins    [:kaocha.plugin/profiling
+              :kaocha.plugin/junit-xml]
+ :reporter   [kaocha.report/documentation]
+ :color?     false
+ :fail-fast? false}
