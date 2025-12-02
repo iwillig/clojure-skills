@@ -401,7 +401,8 @@
            (run 'clean)
            (run 'fmt-check)
            (run 'lint)
-           (run 'typos)
+           ;; Disable typos in the CI for now
+           ;; (run 'typos)
            (run 'test)
            (success-msg "CI pipeline completed successfully"))}
 

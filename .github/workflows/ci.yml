@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Prepare java
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'graalvm'
+        java-version: '25'
+
+    - name: Setup Clojure
+      uses: DeLaGuardo/setup-clojure@12.5
+      with:
+        cli: 'latest'
+        bb: 'latest'
+
+    - name: Cache Clojure dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.m2/repository
+          .cpcache
+        key: ${{ runner.os }}-clojure-deps-${{ hashFiles('**/deps.edn', '**/bb.edn') }}
+        restore-keys: |
+          ${{ runner.os }}-clojure-deps-
+
+    - name: Verify GraalVM installation
+      run: |
+        echo "Java version:"
+        java -version
+        echo "Native Image version:"
+        native-image --version
+
+    - name: Run CI tasks
+      run: bb ci
+      env:
+        CI: true
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          junit.xml
+          target/coverage/
+        if-no-files-found: ignore
