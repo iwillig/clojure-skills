@@ -80,7 +80,7 @@ clj-nrepl-eval -p 7889 "(validate-email nil)"                   # => false
 # 6. Commit - Only after validation, use edit tool to save to file
 
 # 7. Reload - After file changes, reload and verify
-clj-nrepl-eval -p 7889 "(require '[my.namespace :reload])"
+clj-nrepl-eval -p 7889 "(require '[my.namespace] :reload)"
 clj-nrepl-eval -p 7889 "(my.namespace/validate-email \"test@example.com\")"
 ```
 
@@ -537,7 +537,7 @@ When you modify CLI code (e.g., `src/clojure_skills/cli.clj`), the `clojure-skil
 ```bash
 # After editing CLI code:
 # 1. Test in REPL first (validate logic)
-clj-nrepl-eval -p 7889 "(require '[clojure-skills.cli :reload])"
+clj-nrepl-eval -p 7889 "(require '[clojure-skills.cli] :reload)"
 clj-nrepl-eval -p 7889 "(lint-ns 'clojure-skills.cli)"
 
 # 2. Test with bb main (verify end-to-end)
@@ -1867,7 +1867,7 @@ bb setup-python           # Install Python dependencies
 
 5. **Verify** - Reload and test with clj-nrepl-eval
    ```bash
-   clj-nrepl-eval -p 7889 "(require '[my.namespace :reload])"
+   clj-nrepl-eval -p 7889 "(require '[my.namespace] :reload)"
    clj-nrepl-eval -p 7889 "(my.namespace/my-function test-data)"  # Still works?
    ```
 
@@ -2029,7 +2029,7 @@ This helps both you and humans understand progress across sessions.
 1. **Reproduce the issue:**
    ```bash
    # Load the problematic code
-   clj-nrepl-eval -p 7889 "(require '[problem.namespace :reload])"
+   clj-nrepl-eval -p 7889 "(require '[problem.namespace] :reload)"
 
    # Try to reproduce
    clj-nrepl-eval -p 7889 "(problem.namespace/broken-function test-data)"

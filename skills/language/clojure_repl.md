@@ -301,7 +301,7 @@ may not work in all environments.
 - Test expressions incrementally before combining them
 - Use `doc` liberally to learn from existing code
 - Keep the REPL open during development for rapid feedback
-- Use `:reload` flag when re-requiring changed namespaces: `(require 'my.ns :reload)`
+- Use `:reload` flag when re-requiring changed namespaces: `(require '[my.ns] :reload)` or `(require 'my.ns :reload)`
 - Experiment freely - the REPL is a safe sandbox
 - Start with `all-ns` to discover available namespaces
 - Use `dir` to explore namespace contents
@@ -369,12 +369,21 @@ When you edit a source file and reload it:
 ;; Wrong - might keep old definitions
 (require 'my.namespace)
 
-;; Right - forces reload
+;; CORRECT - forces reload (quoted symbol form)
 (require 'my.namespace :reload)
 
-;; Or reload all dependencies too
+;; CORRECT - forces reload (vector form, :reload OUTSIDE vector)
+(require '[my.namespace] :reload)
+
+;; INCORRECT - :reload inside vector causes error
+(require '[my.namespace :reload])  ; IllegalArgumentException!
+
+;; Reload all dependencies too
 (require 'my.namespace :reload-all)
+(require '[my.namespace] :reload-all)
 ```
+
+**Key point**: The `:reload` flag goes **after** the namespace specification, not inside the vector.
 
 ## Development Workflow Tips
 
