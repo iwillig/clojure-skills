@@ -153,23 +153,29 @@ clojure -M:main db stats
 ### 4. Search for a skill (30 seconds)
 
 ```bash
+# Search returns JSON with matching skills
 clojure -M:main skill search "validation"
-# Returns JSON with matching skills
 
-# Or format with jq
-clojure -M:main skill search "validation" | jq '.skills[].name'
-# Shows: malli, spec, schema...
+# Format with jq to show just names
+clojure -M:main skill search "validation" | jq -r '.skills[].name'
+# Output: malli, spec, schema...
+
+# Use human-readable format
+clojure -M:main -H skill search "validation"
 ```
 
 ### 5. View a skill (30 seconds)
 
 ```bash
+# Show skill (returns JSON with full content)
 clojure -M:main skill show malli -c libraries/data_validation
-# Returns JSON with full skill content
 
-# Extract just the content
+# Extract just the markdown content
 clojure -M:main skill show malli | jq -r '.data.content'
 # Displays full Malli validation skill
+
+# Use human-readable format
+clojure -M:main -H skill show malli
 ```
 
 **Next steps:**
@@ -253,11 +259,11 @@ clj-nrepl-eval --version
 git clone https://github.com/yourusername/clojure-skills.git
 cd clojure-skills
 
-# Initialize the database
-clojure -M:main init
+# Initialize the database (creates schema)
+clojure -M:main db init
 
-# Sync skills to database (first time)
-clojure -M:main sync
+# Sync skills to database (loads all skills from filesystem)
+clojure -M:main db sync
 
 # Build native binary (recommended for speed)
 bb build-cli
@@ -273,57 +279,147 @@ The native binary will be created at `target/clojure-skills` and can be moved to
 ```bash
 clojure-skills db stats
 
-# Should show:
-# - 78 skills
-# - 7 prompts
-# - 29 categories
-# - ~1018KB total size
+# Should show (JSON output):
+# {
+#   "type": "database-statistics",
+#   "database": {
+#     "skills": 78,
+#     "prompts": 7,
+#     "categories": 29,
+#     "total-size-bytes": 1018000,
+#     "total-tokens": 250000
+#   }
+# }
+
+# Or use human-readable format:
+clojure-skills -H db stats
 ```
 
 ---
 
 ## CLI Usage
 
-The `clojure-skills` CLI outputs structured JSON by default, making it easy to pipe to `jq` for filtering and processing.
+The `clojure-skills` CLI provides hierarchical subcommands for managing skills, prompts, and the database. All commands output structured JSON by default, making it easy to pipe to `jq` for filtering and processing.
+
+### Command Structure
+
+```bash
+clojure-skills [global-options] <command> [command-options] [arguments...]
+```
+
+**Main commands:**
+- `db` - Database operations (init, sync, reset, stats)
+- `skill` - Skill operations (search, list, show)
+- `prompt` - Prompt operations (search, list, show, render)
+
+**Global options:**
+- `-j, --json` - Output as JSON (default)
+- `-H, --human` - Output in human-readable format
+- `-?, --help` - Show help
+
+### Quick Reference
+
+**Most common commands:**
+
+```bash
+# Search for skills
+clojure-skills skill search "topic"
+
+# List skills in a category
+clojure-skills skill list -c libraries/database
+
+# View a skill's content
+clojure-skills skill show malli | jq -r '.data.content'
+
+# Search prompts
+clojure-skills prompt search "agent"
+
+# Render a prompt as markdown
+clojure-skills prompt render clojure_build
+
+# Database operations
+clojure-skills db sync
+clojure-skills db stats
+```
 
 ### Quick Start
 
 ```bash
-# Get help
+# Get help for any command
 clojure-skills --help
+clojure-skills db --help
+clojure-skills skill --help
+clojure-skills prompt --help
 
 # Search for skills about a topic (returns JSON)
+clojure-skills skill search "validation"
 clojure-skills skill search "validation" | jq '.count'
 
 # List all skills in a category
+clojure-skills skill list -c libraries/database
 clojure-skills skill list -c libraries/database | jq '.skills[].name'
 
 # View a skill's full content (returns JSON)
-clojure-skills skill show malli -c libraries/data_validation | jq '.data.content'
+clojure-skills skill show malli -c libraries/data_validation
+clojure-skills skill show malli | jq -r '.data.content'
 
 # Get database statistics
+clojure-skills db stats
 clojure-skills db stats | jq '.database'
+
+# Render a prompt as plain markdown (new in v0.1.0)
+clojure-skills prompt render clojure_build
+clojure-skills prompt render clojure_skill_builder > my-prompt.md
+
+# Use human-readable output format
+clojure-skills -H skill list
+clojure-skills --human db stats
 ```
 
-**All commands output JSON** - pipe to `jq` for human-readable formatting or further processing.
+**All commands output JSON by default** - pipe to `jq` for human-readable formatting or use `-H` flag for human-readable output.
+
+### Database Commands
+
+**Initialize and manage the database:**
+
+```bash
+# Initialize database (first time setup)
+clojure-skills db init
+
+# Sync skills and prompts from filesystem to database
+clojure-skills db sync
+
+# Show database statistics
+clojure-skills db stats
+
+# Reset database (WARNING: destructive - requires --force flag)
+clojure-skills db reset --force
+```
 
 ### Searching Skills
 
-**Basic search** - finds skills by content match (returns JSON):
+**Full-text search using SQLite FTS5:**
 
 ```bash
-# Search skills
+# Search all skills (returns JSON)
 clojure-skills skill search "http server"
 
 # Search within a specific category
 clojure-skills skill search "query" -c libraries/database
+clojure-skills skill search "validation" -c libraries/data_validation
 
-# Limit results
+# Limit number of results (default: 50)
 clojure-skills skill search "database" -n 10
+clojure-skills skill search "testing" --max-results 20
 
 # Search prompts
 clojure-skills prompt search "agent"
+clojure-skills prompt search "builder"
 ```
+
+**Search command options:**
+- `-c, --category CATEGORY` - Filter by category (e.g., 'libraries/database')
+- `-n, --max-results N` - Maximum results to return (default: 50)
 
 **Example output (JSON):**
 
@@ -371,7 +467,7 @@ clojure-skills skill search "validation" | \
 
 ### Listing Skills
 
-**List all skills (returns JSON):**
+**List all skills with metadata (returns JSON):**
 
 ```bash
 # Get all skills as JSON
@@ -391,7 +487,8 @@ clojure-skills skill list | jq '[.skills[]."token-count"] | add'
 
 ```bash
 # Database skills
-clojure-skills skill list -c libraries/database | jq '.skills'
+clojure-skills skill list -c libraries/database
+clojure-skills skill list --category libraries/database | jq '.skills'
 
 # Testing skills
 clojure-skills skill list -c testing | jq '.skills[].name'
@@ -399,6 +496,9 @@ clojure-skills skill list -c testing | jq '.skills[].name'
 # Language fundamentals
 clojure-skills skill list -c language | jq '.skills'
 ```
+
+**List command options:**
+- `-c, --category CATEGORY` - Filter by category
 
 **Available categories:**
 
@@ -421,20 +521,95 @@ tooling/               - cider, clj-kondo, babashka
 **Show a skill's full content (returns JSON):**
 
 ```bash
-# Basic usage (returns JSON)
+# Basic usage - show skill by name (returns JSON)
 clojure-skills skill show malli
+clojure-skills skill show next_jdbc
 
 # Specify category to avoid ambiguity
 clojure-skills skill show malli -c libraries/data_validation
+clojure-skills skill show malli --category libraries/data_validation
 
-# Extract just the content
+# Extract just the content as markdown
 clojure-skills skill show malli | jq -r '.data.content'
 
-# Get metadata
+# Get metadata only
 clojure-skills skill show malli | jq '.data | {name, category, size: .size_bytes, tokens: .token_count}'
+
+# Extract specific fields
+clojure-skills skill show malli | jq -r '.data.description'
+clojure-skills skill show malli | jq '.data.token_count'
 ```
 
-**Output is JSON with metadata and full markdown content in `.data.content`.**
+**Show command options:**
+- `-c, --category CATEGORY` - Filter by category (useful when skill names are ambiguous)
+
+**Output is JSON with:**
+- `.type` - Always "skill"
+- `.data` - Skill object containing:
+  - `.content` - Full markdown content
+  - `.name` - Skill name
+  - `.category` - Category path
+  - `.size_bytes` - File size in bytes
+  - `.token_count` - Estimated token count
+  - `.created_at`, `.updated_at` - Timestamps
+  - `.file_hash` - SHA256 hash of content
+
+### Working with Prompts
+
+**Search prompts:**
+
+```bash
+# Search all prompts
+clojure-skills prompt search "agent"
+clojure-skills prompt search "builder"
+
+# Limit results
+clojure-skills prompt search "clojure" -n 5
+```
+
+**List all prompts:**
+
+```bash
+# Get all prompts as JSON
+clojure-skills prompt list
+
+# Extract prompt names
+clojure-skills prompt list | jq -r '.prompts[].name'
+
+# Count prompts
+clojure-skills prompt list | jq '.count'
+```
+
+**Show prompt details (JSON):**
+
+```bash
+# Show prompt with metadata and associated skills
+clojure-skills prompt show clojure_build
+clojure-skills prompt show clojure_skill_builder
+
+# Extract just the content
+clojure-skills prompt show clojure_build | jq -r '.data.content'
+
+# View associated skills
+clojure-skills prompt show clojure_build | jq '.data.skills'
+```
+
+**Render prompt as plain markdown:**
+
+```bash
+# Render prompt with all skills composed together
+clojure-skills prompt render clojure_build
+
+# Save to file
+clojure-skills prompt render clojure_skill_builder > my-prompt.md
+
+# Combine with other tools
+clojure-skills prompt render clojure_build | wc -l
+```
+
+**Difference between `show` and `render`:**
+- `prompt show` - Returns JSON with metadata, content, and skill list
+- `prompt render` - Returns plain markdown with all skills composed together (useful for copying to clipboard or saving to file)
 
 ### Database Statistics
 
@@ -464,9 +639,39 @@ clojure-skills db stats | jq '{
 - Configuration (database path, directories, settings)
 - Category breakdown with counts
 
+### Output Formats
+
+**The CLI supports two output formats:**
+
+1. **JSON format** (default, `-j` or `--json`)
+   - Structured data for programmatic processing
+   - Easy to pipe to `jq`
+   - All fields available
+
+2. **Human-readable format** (`-H` or `--human`)
+   - Formatted for terminal display
+   - Tables and readable layout
+   - Useful for quick browsing
+
+**Examples:**
+
+```bash
+# JSON output (default)
+clojure-skills skill list
+clojure-skills -j skill list    # Explicit
+
+# Human-readable output
+clojure-skills -H skill list
+clojure-skills --human db stats
+
+# Format applies to all subcommands
+clojure-skills -H skill search "validation"
+clojure-skills -H prompt show clojure_build
+```
+
 ### JSON Output and jq Integration
 
-**All CLI commands output structured JSON** making it easy to process programmatically or pipe to `jq`.
+**All CLI commands output structured JSON by default** making it easy to process programmatically or pipe to `jq`.
 
 **Common jq patterns:**
 
@@ -486,6 +691,9 @@ clojure-skills skill list | jq '[.skills[]."token-count"] | add'
 
 # Format as table
 clojure-skills skill list | jq -r '.skills[] | "\(.name)\t\(.category)"'
+
+# Pretty print with colors
+clojure-skills skill show malli | jq '.'
 ```
 
 **Example: Find all database-related skills**
@@ -493,6 +701,18 @@ clojure-skills skill list | jq -r '.skills[] | "\(.name)\t\(.category)"'
 ```bash
 clojure-skills skill list | \
   jq '.skills[] | select(.category | contains("database")) | {name, tokens: ."token-count"}'
+```
+
+**Example: Compare skill sizes**
+
+```bash
+# Top 10 largest skills by token count
+clojure-skills skill list | \
+  jq -r '.skills | sort_by(."token-count") | reverse | .[0:10] | .[] | "\(."token-count")\t\(.name)"'
+
+# Skills over 3000 tokens
+clojure-skills skill list | \
+  jq '.skills[] | select(."token-count" > 3000) | {name, tokens: ."token-count"}'
 ```
 
 **Testing JSON output:**
@@ -503,6 +723,31 @@ clojure-skills skill list | \
 # Tests all commands work correctly with jq
 ```
 
+### CLI Command Reference
+
+**Complete command reference table:**
+
+| Command | Description | Options |
+|---------|-------------|---------|
+| **Database Commands** |
+| `db init` | Initialize database with schema | None |
+| `db sync` | Sync skills/prompts from filesystem | None |
+| `db stats` | Show database statistics | None |
+| `db reset --force` | Reset database (destructive) | `--force` (required) |
+| **Skill Commands** |
+| `skill search QUERY` | Search skills using FTS5 | `-c, --category`, `-n, --max-results` |
+| `skill list` | List all skills | `-c, --category` |
+| `skill show NAME` | Display skill content | `-c, --category` |
+| **Prompt Commands** |
+| `prompt search QUERY` | Search prompts using FTS5 | `-n, --max-results` |
+| `prompt list` | List all prompts | None |
+| `prompt show NAME` | Display prompt with metadata | None |
+| `prompt render NAME` | Render prompt as plain markdown | None |
+| **Global Options** |
+| `-j, --json` | Output as JSON (default) | All commands |
+| `-H, --human` | Output in human-readable format | All commands |
+| `-?, --help` | Show help | All commands |
+
 ### Database Management
 
 **Sync skills from filesystem:**
@@ -510,12 +755,71 @@ clojure-skills skill list | \
 ```bash
 # After adding or modifying skill files
 clojure-skills db sync
+
+# Check sync results
+clojure-skills db stats
 ```
 
 **Reset database (destructive):**
 
 ```bash
+# Requires --force flag for safety
 clojure-skills db reset --force
+
+# Re-initialize after reset
+clojure-skills db init
+clojure-skills db sync
+```
+
+### Common CLI Issues
+
+**"No such skill found"**
+
+```bash
+# Problem: Skill name might be ambiguous or in a different category
+clojure-skills skill show http_kit
+# ERROR: Multiple skills found with name 'http_kit'
+
+# Solution: Specify category
+clojure-skills skill show http_kit -c http_servers
+```
+
+**"Database not initialized"**
+
+```bash
+# Problem: Database hasn't been created yet
+clojure-skills skill search "test"
+# ERROR: Database file not found
+
+# Solution: Initialize and sync
+clojure-skills db init
+clojure-skills db sync
+```
+
+**"Empty search results"**
+
+```bash
+# Problem: Search term too specific or no matches
+clojure-skills skill search "nonexistent-library"
+# Returns: {"count": 0, "skills": []}
+
+# Solution: Try broader search terms
+clojure-skills skill search "database"
+clojure-skills skill search "validation"
+```
+
+**"jq: parse error"**
+
+```bash
+# Problem: Command doesn't output JSON
+clojure-skills prompt render clojure_build | jq '.'
+# ERROR: parse error (render outputs plain markdown, not JSON)
+
+# Solution: Use show instead for JSON output
+clojure-skills prompt show clojure_build | jq '.'
+
+# Or don't pipe render to jq
+clojure-skills prompt render clojure_build > output.md
 ```
 
 ### Command Permissions

@@ -122,13 +122,14 @@
 
 (defn cmd-search
   "Search skills and prompts."
-  [{:keys [_arguments category type max-results]}]
+  [{:keys [_arguments category type max-results json human]}]
   (let [query (first _arguments)]
     (validate-non-blank query "Search query cannot be empty")
     (handle-command-errors
      "Search"
      (fn []
-       (let [[_config db] (load-config-and-db)
+       (let [[config db] (load-config-and-db)
+             format (output/get-output-format json human config)
              results (cond
                        (= type "skills")
                        {:skills (search/search-skills db query
@@ -145,7 +146,7 @@
                        (search/search-all db query
                                           :max-results max-results
                                           :category category))]
-         (output/output-data
+         (output/output
           {:type :search-results
            :query query
            :category category
@@ -162,21 +163,23 @@
                                      {:name (:prompts/name prompt)
                                       :size-bytes (or (:prompts/size_bytes prompt) 0)
                                       :token-count (or (:prompts/token_count prompt) 0)})
-                                   (:prompts results))}}))))))
+                                   (:prompts results))}}
+          format))))))
 
 (defn cmd-search-skills
   "Search skills."
-  [{:keys [_arguments category max-results]}]
+  [{:keys [_arguments category max-results json human]}]
   (let [query (first _arguments)]
     (validate-non-blank query "Search query cannot be empty")
     (handle-command-errors
      "Search skills"
      (fn []
-       (let [[_config db] (load-config-and-db)
+       (let [[config db] (load-config-and-db)
              skills (search/search-skills db query
                                           :max-results (or max-results 50)
-                                          :category category)]
-         (output/output-data
+                                          :category category)
+             format (output/get-output-format json human config)]
+         (output/output
           {:type :skill-search-results
            :query query
            :category category
@@ -185,41 +188,49 @@
                           {:name (:skills/name skill)
                            :category (:skills/category skill)
                            :size-bytes (or (:skills/size_bytes skill) 0)
-                           :token-count (or (:skills/token_count skill) 0)})
-                        skills)}))))))
+                           :token-count (or (:skills/token_count skill) 0)
+                           :snippet (:snippet skill)
+                           :rank (:skills_fts/rank skill)})
+                        skills)}
+          format))))))
 
 (defn cmd-search-prompts
   "Search prompts."
-  [{:keys [_arguments max-results]}]
+  [{:keys [_arguments max-results json human]}]
   (let [query (first _arguments)]
     (validate-non-blank query "Search query cannot be empty")
     (handle-command-errors
      "Search prompts"
      (fn []
-       (let [[_config db] (load-config-and-db)
+       (let [[config db] (load-config-and-db)
              prompts (search/search-prompts db query
-                                            :max-results (or max-results 50))]
-         (output/output-data
+                                            :max-results (or max-results 50))
+             format (output/get-output-format json human config)]
+         (output/output
           {:type :prompt-search-results
            :query query
            :count (count prompts)
            :prompts (map (fn [prompt]
                            {:name (:prompts/name prompt)
                             :size-bytes (or (:prompts/size_bytes prompt) 0)
-                            :token-count (or (:prompts/token_count prompt) 0)})
-                         prompts)}))))))
+                            :token-count (or (:prompts/token_count prompt) 0)
+                            :snippet (:snippet prompt)
+                            :rank (:prompts_fts/rank prompt)})
+                         prompts)}
+          format))))))
 
 (defn cmd-list-skills
   "List all skills."
-  [{:keys [category]}]
+  [{:keys [category json human]}]
   (handle-command-errors
    "List skills"
    (fn []
-     (let [[_config db] (load-config-and-db)
+     (let [[config db] (load-config-and-db)
            skills (if category
                     (search/list-skills db :category category)
-                    (search/list-skills db))]
-       (output/output-data
+                    (search/list-skills db))
+           format (output/get-output-format json human config)]
+       (output/output
         {:type :skill-list
          :count (count skills)
          :skills (map (fn [skill]
@@ -227,24 +238,27 @@
                          :category (:skills/category skill)
                          :size-bytes (or (:skills/size_bytes skill) 0)
                          :token-count (or (:skills/token_count skill) 0)})
-                      skills)})))))
+                      skills)}
+        format)))))
 
 (defn cmd-list-prompts
   "List all prompts."
-  [_opts]
+  [{:keys [json human]}]
   (handle-command-errors
    "List prompts"
    (fn []
-     (let [[_config db] (load-config-and-db)
-           prompts (search/list-prompts db)]
-       (output/output-data
+     (let [[config db] (load-config-and-db)
+           prompts (search/list-prompts db)
+           format (output/get-output-format json human config)]
+       (output/output
         {:type :prompt-list
          :count (count prompts)
          :prompts (map (fn [prompt]
                          {:name (:prompts/name prompt)
                           :size-bytes (or (:prompts/size_bytes prompt) 0)
                           :token-count (or (:prompts/token_count prompt) 0)})
-                       prompts)})))))
+                       prompts)}
+        format)))))
 
 (defn list-prompt-skills
   "List all skills associated with a prompt via fragments."
@@ -326,14 +340,15 @@
 
 (defn cmd-show-prompt
   "Show full content of a prompt with metadata and associated skills."
-  [{:keys [_arguments]}]
+  [{:keys [_arguments json human]}]
   (let [prompt-name (first _arguments)]
     (validate-non-blank prompt-name "Prompt name cannot be empty")
     (handle-command-errors
      "Show prompt"
      (fn []
-       (let [[_config db] (load-config-and-db)
-             prompt (search/get-prompt-by-name db prompt-name)]
+       (let [[config db] (load-config-and-db)
+             prompt (search/get-prompt-by-name db prompt-name)
+             format (output/get-output-format json human config)]
          (if prompt
            (let [;; Show embedded fragments (skills that are embedded in the prompt)
                  fragments (list-prompt-fragments db (:prompts/id prompt))
@@ -341,8 +356,8 @@
                  references (list-prompt-references db (:prompts/id prompt))
                  ;; Render full content
                  full-content (render-prompt-content db prompt)]
-             (output/output-data
-              {:type "prompt"
+             (output/output
+              {:type :prompt
                :data {:name (:prompts/name prompt)
                       :title (:prompts/title prompt)
                       :description (:prompts/description prompt)
@@ -362,7 +377,8 @@
                                           :name (:skills/name skill)
                                           :title (:skills/title skill)})
                                        references)
-                      :content full-content}}))
+                      :content full-content}}
+              format))
            (do
              (print-error (str "Prompt not found: " prompt-name))
              (*exit-fn* 1))))))))
@@ -386,15 +402,16 @@
 
 (defn cmd-stats
   "Show database statistics and configuration."
-  [_opts]
+  [{:keys [json human]}]
   (handle-command-errors
    "Get stats"
    (fn []
      (let [[config db] (load-config-and-db)
            stats (search/get-stats db)
            db-path (config/get-db-path config)
-           permissions (get config :permissions {})]
-       (output/output-data
+           permissions (get config :permissions {})
+           format (output/get-output-format json human config)]
+       (output/output
         {:type :stats
          :configuration {:database-path db-path
                          :auto-migrate (get-in config [:database :auto-migrate] true)
@@ -416,7 +433,8 @@
          :category-breakdown (map (fn [cat]
                                     {:category (or (:skills/category cat) (:category cat) "unknown")
                                      :count (or (:count cat) 0)})
-                                  (:category-breakdown stats))})))))
+                                  (:category-breakdown stats))}
+        format)))))
 
 (defn cmd-reset-db
   "Reset database (WARNING: destructive)."
@@ -435,19 +453,21 @@
          (print-success "Database reset complete"))))))
 
 (defn cmd-show-skill
-  "Show full content of a skill as JSON."
-  [{:keys [category _arguments]}]
+  "Show full content of a skill."
+  [{:keys [category _arguments json human]}]
   (let [skill-name (first _arguments)]
     (validate-non-blank skill-name "Skill name cannot be empty")
     (handle-command-errors
      "Show skill"
      (fn []
-       (let [[_config db] (load-config-and-db)
-             skill (search/get-skill-by-name db skill-name :category category)]
+       (let [[config db] (load-config-and-db)
+             skill (search/get-skill-by-name db skill-name :category category)
+             format (output/get-output-format json human config)]
          (if skill
-           (output/output-data
+           (output/output
             {:type :skill
-             :data skill})
+             :data skill}
+            format)
            (do
              (print-error (str "Skill not found: " skill-name
                                (when category (str " in category " category))))

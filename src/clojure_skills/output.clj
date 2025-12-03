@@ -1,9 +1,9 @@
 (ns clojure-skills.output
   "Output formatting for clojure-skills CLI.
-  
+
   Provides both JSON and human-readable output using multimethods that dispatch
   on data type. Each data type can define custom formatting for both formats.
-  
+
   Default behavior: JSON output for all types unless custom human formatter exists."
   (:require
    [bling.core :as bling]
@@ -29,180 +29,23 @@
   (json/pprint data))
 
 ;; ============================================================
-;; Type-specific formatters
-;; ============================================================
-
-;; ------------------------------------------------------------
-;; task-list
-;; ------------------------------------------------------------
-(defmethod format-json "task-list" [data]
-  (json/pprint data))
-
-(defmethod format-human "task-list" [data]
-  (let [tl (:data data)]
-    (println)
-    (println (bling/bling [:bold (:name tl)]))
-    (println (str "ID: " (:id tl)))
-    (println (str "Plan ID: " (:plan_id tl)))
-    (when (:description tl)
-      (println (str "Description: " (:description tl))))
-    (when (:position tl)
-      (println (str "Position: " (:position tl))))
-    (println (str "Created at: " (:created-at tl)))
-    (when (:updated-at tl)
-      (println (str "Updated at: " (:updated-at tl))))
-
-    ;; Show tasks in this list
-    (when-let [tasks (:tasks tl)]
-      (when (seq tasks)
-        (println)
-        (println (bling/bling [:bold "Tasks:"]))
-        (doseq [task tasks]
-          (println (str "  " (if (:completed task) "✓" "○") " "
-                        "[" (:id task) "] "
-                        (:name task)))
-          (when (:description task)
-            (println (str "      " (:description task))))
-          (when (:assigned-to task)
-            (println (str "      Assigned to: " (:assigned-to task)))))))))
-
-;; ------------------------------------------------------------
-;; task
-;; ------------------------------------------------------------
-(defmethod format-json "task" [data]
-  (json/pprint data))
-
-(defmethod format-human "task" [data]
-  (let [t (:data data)]
-    (println)
-    (println (bling/bling [:bold (:name t)]))
-    (println (str "ID: " (:id t)))
-    (println (str "Task List ID: " (:list_id t)))
-    (println (str "Status: " (if (:completed t) "Completed" "Not completed")))
-
-    (when (:description t)
-      (println)
-      (println (bling/bling [:underline "Description:"]))
-      (println (:description t)))
-
-    (when (:assigned-to t)
-      (println)
-      (println (str "Assigned to: " (:assigned-to t))))
-
-    (when (:position t)
-      (println (str "Position: " (:position t))))
-
-    (println)
-    (println (str "Created at: " (:created-at t)))
-    (when (:updated-at t)
-      (println (str "Updated at: " (:updated-at t))))
-    (when (:completed-at t)
-      (println (str "Completed at: " (:completed-at t))))))
-
-;; ------------------------------------------------------------
-;; plan-result
-;; ------------------------------------------------------------
-(defmethod format-json "plan-result" [data]
-  (json/pprint data))
-
-(defmethod format-human "plan-result" [data]
-  (let [r (:data data)]
-    (println)
-    (println (bling/bling [:bold "Plan Result"]))
-    (println (str "ID: " (:id r)))
-    (println (str "Plan ID: " (:plan_id r)))
-    (println (str "Outcome: " (:outcome r)))
-
-    (println)
-    (println (bling/bling [:underline "Summary:"]))
-    (println (:summary r))
-
-    (when (:challenges r)
-      (println)
-      (println (bling/bling [:underline "Challenges:"]))
-      (println (:challenges r)))
-
-    (when (:solutions r)
-      (println)
-      (println (bling/bling [:underline "Solutions:"]))
-      (println (:solutions r)))
-
-    (when (:lessons_learned r)
-      (println)
-      (println (bling/bling [:underline "Lessons Learned:"]))
-      (println (:lessons_learned r)))
-
-    (when (:metrics r)
-      (println)
-      (println (bling/bling [:underline "Metrics:"]))
-      (println (:metrics r)))
-
-    (println)
-    (println (str "Created at: " (:created_at r)))
-    (println (str "Updated at: " (:updated_at r)))))
-
-;; ------------------------------------------------------------
-;; plan-skills-list
-;; ------------------------------------------------------------
-(defmethod format-json "plan-skills-list" [data]
-  (json/pprint data))
-
-(defmethod format-human "plan-skills-list" [data]
-  (let [plan-id (:plan-id data)
-        skills (:skills data)]
-    (if (empty? skills)
-      (println (str "No skills associated with plan " plan-id))
-      (do
-        (println)
-        (println (bling/bling [:bold (format "Skills for plan %d:" plan-id)]))
-        (println)
-        (table/print-table
-         [:position :category :name :title]
-         (map (fn [skill]
-                {:position (:position skill)
-                 :category (:category skill)
-                 :name (:name skill)
-                 :title (or (:title skill) "")})
-              skills))
-        (println)))))
-
-;; ------------------------------------------------------------
-;; plan-results-search
-;; ------------------------------------------------------------
-(defmethod format-json "plan-results-search" [data]
-  (json/pprint data))
-
-(defmethod format-human "plan-results-search" [data]
-  (let [results (:results data)
-        count (:count data)]
-    (println)
-    (println (bling/bling [:bold (format "Found %d results" count)]))
-    (doseq [result results]
-      (println)
-      (println (str "Plan ID: " (:plan_id result)
-                    " | Outcome: " (:outcome result)))
-      (println (str "Snippet: " (:snippet result)))
-      (when (:rank result)
-        (println (str "Rank: " (:rank result)))))))
-
-;; ============================================================
 ;; Public API
 ;; ============================================================
 
 (defn get-output-format
   "Determine output format from CLI flags, config, or default.
-   
+
    Priority:
    1. CLI --json flag (overrides everything)
    2. CLI --human flag (overrides config)
    3. Config file setting (:output :format)
    4. Default to :json
-   
+
    Args:
      json-flag - Boolean or nil from CLI --json flag
      human-flag - Boolean or nil from CLI --human flag
      config - Configuration map
-   
+
    Returns:
      :json or :human"
   [json-flag human-flag config]
@@ -213,14 +56,14 @@
 
 (defn output
   "Output data in specified format using multimethods.
-   
+
    Dispatches to format-json or format-human based on format parameter.
    Falls back to JSON for unknown formats.
-   
+
    Args:
      data - Data map with :type field for dispatch
      format - :json or :human
-   
+
    Returns:
      nil (output goes to stdout)"
   [data format]
@@ -232,12 +75,12 @@
 
 (defn output-data
   "Output data as formatted JSON to stdout.
-   
+
    Backward compatible wrapper - always outputs JSON.
-   
+
    Args:
      data - Data structure to output
-   
+
    Returns:
      nil (output goes to stdout)"
   [data]
@@ -251,10 +94,10 @@
 ;; ------------------------------------------------------------
 ;; skill-search-results
 ;; ------------------------------------------------------------
-(defmethod format-json "skill-search-results" [data]
+(defmethod format-json :skill-search-results [data]
   (json/pprint data))
 
-(defmethod format-human "skill-search-results" [data]
+(defmethod format-human :skill-search-results [data]
   (let [query (:query data)
         skills (:skills data)
         count (:count data)]
@@ -262,23 +105,20 @@
     (println (bling/bling [:bold (format "Found %d skills matching \"%s\"" count query)]))
     (when (seq skills)
       (println)
-      (table/print-table
-       [:name :category :size-kb :tokens]
-       (map (fn [skill]
-              {:name (:name skill)
-               :category (:category skill)
-               :size-kb (format "%.1f" (/ (:size-bytes skill) 1024.0))
-               :tokens (:token-count skill)})
-            skills))
+      (doseq [skill skills]
+        (println (bling/bling [:bold (str "• " (:name skill))] [:dim (str " (" (:category skill) ")")]))
+        (when-let [snippet (:snippet skill)]
+          (println (str "  " snippet)))
+        (println))
       (println))))
 
 ;; ------------------------------------------------------------
 ;; skill-list
 ;; ------------------------------------------------------------
-(defmethod format-json "skill-list" [data]
+(defmethod format-json :skill-list [data]
   (json/pprint data))
 
-(defmethod format-human "skill-list" [data]
+(defmethod format-human :skill-list [data]
   (let [skills (:skills data)
         count (:count data)]
     (println)
@@ -298,10 +138,10 @@
 ;; ------------------------------------------------------------
 ;; skill
 ;; ------------------------------------------------------------
-(defmethod format-json "skill" [data]
+(defmethod format-json :skill [data]
   (json/pprint data))
 
-(defmethod format-human "skill" [data]
+(defmethod format-human :skill [data]
   (let [skill (:data data)]
     (println)
     (println (bling/bling [:bold (:skills/name skill)]))
@@ -321,10 +161,10 @@
 ;; ------------------------------------------------------------
 ;; prompt-search-results
 ;; ------------------------------------------------------------
-(defmethod format-json "prompt-search-results" [data]
+(defmethod format-json :prompt-search-results [data]
   (json/pprint data))
 
-(defmethod format-human "prompt-search-results" [data]
+(defmethod format-human :prompt-search-results [data]
   (let [query (:query data)
         prompts (:prompts data)
         count (:count data)]
@@ -332,22 +172,20 @@
     (println (bling/bling [:bold (format "Found %d prompts matching \"%s\"" count query)]))
     (when (seq prompts)
       (println)
-      (table/print-table
-       [:name :size-kb :tokens]
-       (map (fn [prompt]
-              {:name (:name prompt)
-               :size-kb (format "%.1f" (/ (:size-bytes prompt) 1024.0))
-               :tokens (:token-count prompt)})
-            prompts))
+      (doseq [prompt prompts]
+        (println (bling/bling [:bold (str "• " (:name prompt))]))
+        (when-let [snippet (:snippet prompt)]
+          (println (str "  " snippet)))
+        (println))
       (println))))
 
 ;; ------------------------------------------------------------
 ;; prompt-list
 ;; ------------------------------------------------------------
-(defmethod format-json "prompt-list" [data]
+(defmethod format-json :prompt-list [data]
   (json/pprint data))
 
-(defmethod format-human "prompt-list" [data]
+(defmethod format-human :prompt-list [data]
   (let [prompts (:prompts data)
         count (:count data)]
     (println)
@@ -366,10 +204,10 @@
 ;; ------------------------------------------------------------
 ;; prompt (complex - with embedded/reference skills)
 ;; ------------------------------------------------------------
-(defmethod format-json "prompt" [data]
+(defmethod format-json :prompt [data]
   (json/pprint data))
 
-(defmethod format-human "prompt" [data]
+(defmethod format-human :prompt [data]
   (let [p (:data data)]
     (println)
     (println (bling/bling [:bold (:name p)]))
@@ -411,10 +249,10 @@
 ;; ------------------------------------------------------------
 ;; stats
 ;; ------------------------------------------------------------
-(defmethod format-json "stats" [data]
+(defmethod format-json :stats [data]
   (json/pprint data))
 
-(defmethod format-human "stats" [data]
+(defmethod format-human :stats [data]
   (let [config (:configuration data)
         db (:database data)
         perms (:permissions data)
@@ -454,90 +292,12 @@
       (println))))
 
 ;; ------------------------------------------------------------
-;; plan-list
-;; ------------------------------------------------------------
-(defmethod format-json "plan-list" [data]
-  (json/pprint data))
-
-(defmethod format-human "plan-list" [data]
-  (let [plans (:plans data)
-        count (:count data)]
-    (println)
-    (println (bling/bling [:bold (format "Total: %d plans" count)]))
-    (when (seq plans)
-      (println)
-      (table/print-table
-       [:id :name :status :created-by :assigned-to]
-       (map (fn [plan]
-              {:id (:id plan)
-               :name (:name plan)
-               :status (:status plan)
-               :created-by (or (:created-by plan) "")
-               :assigned-to (or (:assigned-to plan) "")})
-            plans))
-      (println))))
-
-;; ------------------------------------------------------------
-;; plan (complex - with task lists and tasks)
-;; ------------------------------------------------------------
-(defmethod format-json "plan" [data]
-  (json/pprint data))
-
-(defmethod format-human "plan" [data]
-  (let [p (:data data)]
-    (println)
-    (println (bling/bling [:bold (:name p)]))
-    (when (:title p)
-      (println (bling/bling [:italic (:title p)])))
-    (println (str "ID: " (:id p)))
-    (println (str "Status: " (:status p)))
-    (when (:summary p)
-      (println (str "Summary: " (:summary p))))
-    (when (:created-by p)
-      (println (str "Created by: " (:created-by p))))
-    (when (:assigned-to p)
-      (println (str "Assigned to: " (:assigned-to p))))
-    (println (str "Created: " (:created-at p)))
-    (when (:completed-at p)
-      (println (str "Completed: " (:completed-at p))))
-
-    ;; Associated skills
-    (when-let [skills (:skills p)]
-      (when (seq skills)
-        (println)
-        (println (bling/bling [:underline "Associated Skills:"]))
-        (doseq [skill skills]
-          (println (str "  " (:position skill) ". [" (:category skill) "] " (:name skill))))))
-
-    ;; Plan result
-    (when-let [result (:result p)]
-      (println)
-      (println (bling/bling [:underline "Result:"]))
-      (println (str "  Outcome: " (:outcome result)))
-      (when (:summary result)
-        (println (str "  Summary: " (:summary result)))))
-
-    ;; Task lists and tasks
-    (when-let [task-lists (:task-lists p)]
-      (when (seq task-lists)
-        (println)
-        (println (bling/bling [:underline "Task Lists:"]))
-        (doseq [tl task-lists]
-          (println)
-          (println (str "  [" (:id tl) "] " (:name tl)))
-          (when-let [tasks (:tasks tl)]
-            (when (seq tasks)
-              (doseq [task tasks]
-                (println (str "    " (if (:completed task) "✓" "○") " "
-                              "[" (:id task) "] " (:name task)))))))))))
-
-;; ------------------------------------------------------------
 ;; search-results (combined skills + prompts)
 ;; ------------------------------------------------------------
-(defmethod format-json "search-results" [data]
+(defmethod format-json :search-results [data]
   (json/pprint data))
 
-(defmethod format-human "search-results" [data]
+(defmethod format-human :search-results [data]
   (let [query (:query data)
         skills (get-in data [:skills :results])
         skill-count (get-in data [:skills :count])
