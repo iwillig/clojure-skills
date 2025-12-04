@@ -3,7 +3,8 @@
   (:require
    [clojure-skills.config :as config]
    [clojure-skills.db.migrate :as migrate]
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io]
+   [failjure.core :as f]))
 
 (defn ensure-db-dir
   "Ensure the directory containing the database file exists."
@@ -29,7 +30,11 @@
 (defn init-db
   "Initialize database with Ragtime migrations."
   ([db]
-   (migrate/migrate-db db))
+   (let [result (migrate/migrate-db db)]
+     (if (f/failed? result)
+       (throw (ex-info "Database initialization failed"
+                       {:reason (f/message result)}))
+       result)))
   ([]
    (let [config (config/load-config)
          db-path (config/get-db-path config)]

@@ -13,6 +13,7 @@
    [clojure-skills.search :as search]
    [clojure-skills.sync :as sync]
    [clojure.string :as str]
+   [failjure.core :as f]
    [next.jdbc :as jdbc]))
 
 (set! *warn-on-reflection* true)
@@ -77,10 +78,13 @@
       (*exit-fn* 1))))
 
 (defn handle-command-errors
-  "Execute a command function with unified error handling."
+  "Execute a command function with unified error handling for both exceptions and failjure."
   [operation-name f & args]
   (try
-    (apply f args)
+    (let [result (apply f args)]
+      (when (f/failed? result)
+        (print-error (f/message result))
+        (*exit-fn* 1)))
     (catch Exception e
       (print-error-with-exception (str operation-name " failed") e)
       (*exit-fn* 1))))
@@ -264,12 +268,12 @@
   "List all skills associated with a prompt via fragments."
   [db prompt-id]
   (jdbc/execute! db
-                 ["SELECT pfs.position, s.* 
+                 ["SELECT pfs.position, s.*
                    FROM prompt_references pr
                    JOIN prompt_fragments pf ON pr.target_fragment_id = pf.id
                    JOIN prompt_fragment_skills pfs ON pf.id = pfs.fragment_id
                    JOIN skills s ON pfs.skill_id = s.id
-                   WHERE pr.source_prompt_id = ? 
+                   WHERE pr.source_prompt_id = ?
                      AND pr.reference_type = 'fragment'
                    ORDER BY pfs.position"
                   prompt-id]))
@@ -278,12 +282,12 @@
   "List skills in embedded fragments (fragments that should be embedded in the prompt)."
   [db prompt-id]
   (jdbc/execute! db
-                 ["SELECT pfs.position, s.* 
+                 ["SELECT pfs.position, s.*
                    FROM prompt_references pr
                    JOIN prompt_fragments pf ON pr.target_fragment_id = pf.id
                    JOIN prompt_fragment_skills pfs ON pf.id = pfs.fragment_id
                    JOIN skills s ON pfs.skill_id = s.id
-                   WHERE pr.source_prompt_id = ? 
+                   WHERE pr.source_prompt_id = ?
                      AND pr.reference_type = 'fragment'
                      AND pf.name NOT LIKE '%-ref-%'
                    ORDER BY pfs.position"
@@ -293,12 +297,12 @@
   "List skills in reference fragments (fragments that are tracked but not embedded)."
   [db prompt-id]
   (jdbc/execute! db
-                 ["SELECT pfs.position, s.* 
+                 ["SELECT pfs.position, s.*
                    FROM prompt_references pr
                    JOIN prompt_fragments pf ON pr.target_fragment_id = pf.id
                    JOIN prompt_fragment_skills pfs ON pf.id = pfs.fragment_id
                    JOIN skills s ON pfs.skill_id = s.id
-                   WHERE pr.source_prompt_id = ? 
+                   WHERE pr.source_prompt_id = ?
                      AND pr.reference_type = 'fragment'
                      AND pf.name LIKE '%-ref-%'
                    ORDER BY pfs.position"
@@ -306,11 +310,11 @@
 
 (defn render-prompt-content
   "Compose full prompt content by combining prompt intro, embedded skills, and references.
-  
+
   Args:
     db - Database connection
     prompt - Prompt map with :prompts/id and :prompts/content
-  
+
   Returns:
     String with composed markdown content"
   [db prompt]
