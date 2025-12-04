@@ -409,11 +409,15 @@
      (let [[config db] (load-config-and-db)
            stats (search/get-stats db)
            db-path (config/get-db-path config)
+           config-file-path (config/get-config-file-path)
+           project-config-path (config/get-project-config-file-path)
            permissions (get config :permissions {})
            format (output/get-output-format json human config)]
        (output/output
         {:type :stats
          :configuration {:database-path db-path
+                         :config-file-path config-file-path
+                         :project-config-path project-config-path
                          :auto-migrate (get-in config [:database :auto-migrate] true)
                          :skills-directory (get-in config [:project :skills-dir] "skills")
                          :prompts-directory (get-in config [:project :prompts-dir] "prompts")

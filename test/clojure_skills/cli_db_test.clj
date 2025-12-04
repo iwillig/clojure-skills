@@ -173,3 +173,19 @@
         (let [count (jdbc/execute-one! tu/*connection*
                                        ["SELECT COUNT(*) as count FROM skills"])]
           (is (= 0 (:count count))))))))
+
+(deftest db-stats-config-paths-test
+  (testing "Given: A database with configuration"
+    (binding [cli/*exit-fn* mock-exit]
+      (with-redefs [cli/load-config-and-db mock-load-config-and-db]
+        (testing "When: We request database statistics"
+          (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
+                parsed (tu/parse-json-output output)
+                config (:configuration parsed)]
+            (testing "Then: Configuration should include config file paths"
+              (is (contains? config :config-file-path) "config-file-path is present")
+              (is (string? (:config-file-path config)) "config-file-path is a string")
+              (is (contains? config :project-config-path) "project-config-path is present")
+              (is (string? (:project-config-path config)) "project-config-path is a string")
+              (is (contains? config :database-path) "database-path is present")
+              (is (string? (:database-path config)) "database-path is a string"))))))))
