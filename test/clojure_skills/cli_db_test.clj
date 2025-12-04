@@ -41,8 +41,8 @@
                                   ["SELECT name FROM sqlite_master WHERE type='table'"])
             table-names (set (map :sqlite_master/name tables))]
         (testing "Then: the set should contain the tables created by migrations"
-          (is (contains? table-names "skills") "Skills table exists")
-          (is (contains? table-names "prompts") "Prompts table exists"))))))
+          (is (contains? table-names "skills"))
+          (is (contains? table-names "prompts")))))))
 
 ;; Tests for db init command
 (deftest db-init-command-test
@@ -162,8 +162,9 @@
         ;; 3. Stats
         (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
               parsed (tu/parse-json-output output)]
-          (is (= "stats" (:type parsed)))
-          (is (map? (:database parsed))))
+          (is (match? {:type "stats"
+                       :database map?}
+                      parsed)))
 
         ;; 4. Reset
         (let [{:keys [output]} (capture-output #(cli/cmd-reset-db {:force true}))]
@@ -173,3 +174,17 @@
         (let [count (jdbc/execute-one! tu/*connection*
                                        ["SELECT COUNT(*) as count FROM skills"])]
           (is (= 0 (:count count))))))))
+
+(deftest db-stats-config-paths-test
+  (testing "Given: A database with configuration"
+    (binding [cli/*exit-fn* mock-exit]
+      (with-redefs [cli/load-config-and-db mock-load-config-and-db]
+        (testing "When: We request database statistics"
+          (let [{:keys [output]} (capture-output #(cli/cmd-stats {}))
+                parsed (tu/parse-json-output output)]
+            (testing "Then: Configuration should include config file paths"
+              (is (match? {:type "stats"
+                           :configuration {:config-file-path string?
+                                           :project-config-path string?
+                                           :database-path string?}}
+                          parsed)))))))))

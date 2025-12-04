@@ -7,7 +7,8 @@
             [ragtime.repl :as ragtime-repl]
             [ragtime.strategy]
             [ragtime.reporter]
-            [clojure-skills.db.migrate :as migrate])
+            [clojure-skills.db.migrate :as migrate]
+            [failjure.core :as f])
   (:import (org.sqlite.core DB)
            (org.sqlite SQLiteConnection)))
 
@@ -61,7 +62,10 @@
    (setup-test-db db-spec true))
   ([db-spec run-migrations?]
    (when run-migrations?
-     (migrate/migrate-db db-spec))
+     (let [result (migrate/migrate-db db-spec)]
+       (when (f/failed? result)
+         (throw (ex-info "Test database migration failed"
+                         {:reason (f/message result)})))))
    db-spec))
 
 (defn cleanup-test-db
@@ -83,8 +87,8 @@
                      "file::memory:?cache=shared"
                      (or db-path (str "test-" (random-uuid) ".db")))
            db-spec {:dbtype "sqlite" :dbname db-path}]
-       ;; Setup
-       (setup-test-db db-spec run-migrations?)
+        ;; Setup
+        (setup-test-db db-spec run-migrations?)  ; Handles failjure results via setup-test-db
 
        ;; Create datasource for connection reuse (important for in-memory DBs)
        (let [datasource (jdbc/get-datasource db-spec)]

@@ -6,7 +6,8 @@
    [clojure-skills.db.prompt-fragments :as pf]
    [next.jdbc :as jdbc]
    [next.jdbc.sql :as sql]
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io]
+   [failjure.core :as f]))
 
 (defn create-test-db
   "Create a test database with all migrations applied"
@@ -14,7 +15,10 @@
   (let [db-file (str "test-prompt-fragments-" (java.util.UUID/randomUUID) ".db")
         db-spec {:dbtype "sqlite" :dbname db-file}]
     ;; Apply all migrations
-    (migrate/migrate-db db-spec)
+    (let [result (migrate/migrate-db db-spec)]
+      (when (f/failed? result)
+        (throw (ex-info "Test database migration failed"
+                        {:reason (f/message result)}))))
     {:db-spec db-spec :db-file db-file}))
 
 (defn cleanup-test-db
