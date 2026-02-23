@@ -133,7 +133,7 @@ clj-nrepl-eval --help
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/clojure-skills.git
+git clone --depth 1 https://github.com/iwillig/clojure-skills.git
 cd clojure-skills
 
 # Initialize database
@@ -256,7 +256,7 @@ clj-nrepl-eval --version
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/clojure-skills.git
+git clone --depth 1 https://github.com/iwillig/clojure-skills.git
 cd clojure-skills
 
 # Initialize the database (creates schema)
