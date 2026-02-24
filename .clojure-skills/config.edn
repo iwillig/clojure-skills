@@ -1,4 +1,4 @@
-{:database {:path "~/dev/clojure-skills/clojure-skills.db",
+{:database {:path "~/.config/clojure-skills/clojure-skills.db",
             :auto-migrate true},
  :project {:root nil,
            :skills-dir "skills",
